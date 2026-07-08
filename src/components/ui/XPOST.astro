@@ -1,0 +1,70 @@
+<script is:inline>
+  ;(function () {
+    const state = (window.__xPostState ||= {
+      setupPending: false,
+      installed: false
+    })
+
+    function loadXCards() {
+      const xCards = document.querySelectorAll('.twitter-tweet')
+      if (xCards.length === 0) return
+
+      if (document.querySelector('script[src*="platform.twitter.com/widgets.js"]')) {
+        window.twttr?.widgets?.load?.()
+        return
+      }
+
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      xCards.forEach((element) => {
+        element.setAttribute('data-theme', isDark ? 'dark' : 'light')
+      })
+
+      const script = document.createElement('script')
+      script.src = 'https://platform.twitter.com/widgets.js'
+      script.async = true
+      document.head.appendChild(script)
+    }
+
+    function scheduleXCards() {
+      if (state.setupPending) return
+      state.setupPending = true
+      requestAnimationFrame(() => {
+        state.setupPending = false
+        loadXCards()
+      })
+    }
+
+    window.__scheduleXCards = scheduleXCards
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleXCards, { once: true })
+    } else {
+      scheduleXCards()
+    }
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:after-swap', scheduleXCards)
+      document.addEventListener('astro:page-load', scheduleXCards)
+    }
+  })()
+</script>
+
+<style is:inline>
+  .prose .x-card {
+    width: 100%;
+    margin: 1em auto;
+    text-align: center;
+  }
+
+  .prose .x-card > * {
+    display: inline-block;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .prose .x-card iframe {
+    max-width: 100%;
+    width: auto;
+  }
+</style>

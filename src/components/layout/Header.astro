@@ -1,0 +1,654 @@
+---
+import ThemeToggle from '@/components/ui/ThemeToggle.astro'
+import { themeConfig } from '@/config'
+import { primaryNavLinks } from '@/lib/navigation'
+import BookmarkSimple from 'phosphor-astro/BookmarkSimple.astro'
+import Compass from 'phosphor-astro/Compass.astro'
+import Folders from 'phosphor-astro/Folders.astro'
+import GridFour from 'phosphor-astro/GridFour.astro'
+import House from 'phosphor-astro/House.astro'
+import NotePencil from 'phosphor-astro/NotePencil.astro'
+import RssSimple from 'phosphor-astro/RssSimple.astro'
+import X from 'phosphor-astro/X.astro'
+
+const pageDescriptions = {
+  '/': 'Post timeline',
+  '/categories': 'Browse by topic',
+  '/now': 'What I am up to',
+  '/nav': 'Frequently used sites',
+  '/newsletter': 'Email subscription',
+  '/para-notes': 'Short notes'
+}
+
+function getPrimaryLink(href: string) {
+  return primaryNavLinks.find((link) => link.href === href) ?? { href, label: href }
+}
+
+function isPrimaryLinkActive(pathname: string, href: string) {
+  const normalizedPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '')
+  const normalizedHref = href === '/' ? '/' : href.replace(/\/$/, '')
+
+  return normalizedHref === '/'
+    ? normalizedPath === '/'
+    : normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`)
+}
+
+const quickNavLinks = [
+  { ...getPrimaryLink('/'), description: pageDescriptions['/'], icon: House },
+  {
+    ...getPrimaryLink('/categories'),
+    description: pageDescriptions['/categories'],
+    icon: Folders
+  },
+  { ...getPrimaryLink('/now'), description: pageDescriptions['/now'], icon: Compass },
+  { ...getPrimaryLink('/nav'), description: pageDescriptions['/nav'], icon: BookmarkSimple },
+  {
+    ...getPrimaryLink('/newsletter'),
+    description: pageDescriptions['/newsletter'],
+    icon: RssSimple
+  },
+  {
+    ...getPrimaryLink('/para-notes'),
+    description: pageDescriptions['/para-notes'],
+    icon: NotePencil
+  }
+].map((link) => ({
+  ...link,
+  active: isPrimaryLinkActive(Astro.url.pathname, link.href)
+}))
+---
+
+<header class="site-header">
+  <nav class="site-nav" aria-label="Primary">
+    <a class="site-brand" href="/" aria-label={`${themeConfig.site.title} home`}>
+      <img
+        class="brand-logo brand-logo-light"
+        src="/logo-light.png"
+        alt={themeConfig.site.title}
+        width="184"
+        height="112"
+      />
+      <img
+        class="brand-logo brand-logo-dark"
+        src="/logo-dark.png"
+        alt=""
+        width="184"
+        height="112"
+      />
+    </a>
+    <div class="nav-actions">
+      <div class="quick-nav" data-quick-nav>
+        <button
+          class="quick-nav-toggle"
+          type="button"
+          aria-label="Open quick navigation"
+          aria-expanded="false"
+          aria-controls="quick-nav-panel"
+          data-quick-nav-toggle
+        >
+          <GridFour width={19} height={19} class="quick-nav-icon quick-nav-icon-open" />
+          <X width={18} height={18} class="quick-nav-icon quick-nav-icon-close" />
+        </button>
+      </div>
+      <ThemeToggle />
+    </div>
+  </nav>
+</header>
+
+<div class="quick-nav-layer" data-quick-nav-layer>
+  <button
+    class="quick-nav-backdrop"
+    type="button"
+    aria-label="Close quick navigation"
+    data-quick-nav-backdrop
+    hidden></button>
+
+  <aside
+    class="quick-nav-panel"
+    id="quick-nav-panel"
+    aria-label="Quick navigation"
+    data-quick-nav-panel
+    hidden
+  >
+    <div class="quick-nav-panel-head">
+      <span>Quick navigation</span>
+      <button class="quick-nav-close" type="button" aria-label="Close quick navigation" data-quick-nav-close>
+        <X width={17} height={17} />
+      </button>
+    </div>
+    <div class="quick-nav-grid">
+      {
+        quickNavLinks.map((link) => {
+          const Icon = link.icon
+
+          return (
+            <a
+              class={link.active ? 'quick-nav-link is-active' : 'quick-nav-link'}
+              href={link.href}
+              aria-current={link.active ? 'page' : undefined}
+            >
+              <Icon width={18} height={18} class="quick-nav-link-icon" />
+              <span class="quick-nav-copy">
+                <span class="quick-nav-label">{link.label}</span>
+                <span class="quick-nav-description">{link.description}</span>
+              </span>
+            </a>
+          )
+        })
+      }
+    </div>
+  </aside>
+</div>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    margin-top: -2.5rem;
+    margin-bottom: 2.25rem;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-top: 2.5rem;
+    background-color: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition:
+      background-color 0.18s ease-out,
+      box-shadow 0.18s ease-out;
+  }
+
+  .site-header.is-scrolled {
+    background-color: color-mix(in srgb, var(--bg) 92%, transparent);
+    box-shadow: 0 0.35rem 1.4rem color-mix(in srgb, var(--text-primary) 7%, transparent);
+  }
+
+  .site-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 0 1.5rem 0.85rem;
+  }
+
+  .site-brand {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    width: 5rem;
+    height: 3.125rem;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .brand-logo {
+    display: block;
+    width: 5rem;
+    height: auto;
+    aspect-ratio: 8 / 5;
+    object-fit: contain;
+  }
+
+  .brand-logo-dark {
+    display: none;
+  }
+
+  :global(html.dark) .brand-logo-light {
+    display: none;
+  }
+
+  :global(html.dark) .brand-logo-dark {
+    display: block;
+  }
+
+  .nav-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+  }
+
+  .quick-nav {
+    display: inline-flex;
+  }
+
+  .quick-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color 0.15s ease-out,
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out;
+  }
+
+  .quick-nav-toggle:hover,
+  .quick-nav-toggle[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--border) 72%, var(--text-tertiary) 28%);
+    background-color: color-mix(in srgb, var(--selection) 88%, transparent);
+    color: var(--text-primary);
+  }
+
+  .quick-nav-icon {
+    flex: 0 0 auto;
+  }
+
+  .quick-nav-icon-close {
+    display: none;
+  }
+
+  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-open {
+    display: none;
+  }
+
+  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-close {
+    display: block;
+  }
+
+  .quick-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    padding: 0;
+    border: 0;
+    background-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+    cursor: default;
+    animation: quick-nav-fade-in 0.16s ease-out both;
+  }
+
+  .quick-nav-backdrop[hidden] {
+    display: none;
+  }
+
+  .quick-nav-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(21rem, calc(100vw - 2rem));
+    padding: max(1.15rem, env(safe-area-inset-top)) 0.8rem max(1.15rem, env(safe-area-inset-bottom))
+      0.8rem;
+    border-left: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    border-radius: 8px 0 0 8px;
+    background-color: color-mix(in srgb, var(--bg) 94%, transparent);
+    box-shadow: -0.85rem 0 2.8rem color-mix(in srgb, var(--text-primary) 15%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    animation: quick-nav-slide-in-side 0.18s ease-out both;
+  }
+
+  .quick-nav-panel[hidden] {
+    display: none;
+  }
+
+  .quick-nav-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.25rem 0.75rem;
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .quick-nav-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color 0.15s ease-out,
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out;
+  }
+
+  .quick-nav-close:hover {
+    border-color: color-mix(in srgb, var(--border) 72%, var(--text-tertiary) 28%);
+    background-color: color-mix(in srgb, var(--selection) 88%, transparent);
+    color: var(--text-primary);
+  }
+
+  .quick-nav-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .quick-nav-link {
+    display: grid;
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 3.35rem;
+    padding: 0.58rem 0.62rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition:
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+
+  .quick-nav-link:hover,
+  .quick-nav-link:focus-visible,
+  .quick-nav-link.is-active {
+    border-color: color-mix(in srgb, var(--border) 76%, var(--text-tertiary) 24%);
+    background-color: color-mix(in srgb, var(--selection) 88%, transparent);
+  }
+
+  .quick-nav-link:hover {
+    transform: translateX(-0.08rem);
+  }
+
+  .quick-nav-link-icon {
+    color: var(--text-secondary);
+  }
+
+  .quick-nav-link.is-active .quick-nav-link-icon,
+  .quick-nav-link:hover .quick-nav-link-icon {
+    color: var(--text-primary);
+  }
+
+  .quick-nav-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .quick-nav-label,
+  .quick-nav-description {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quick-nav-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .quick-nav-description {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  :global(html.quick-nav-open) {
+    overflow: hidden;
+  }
+
+  @keyframes quick-nav-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes quick-nav-slide-in-side {
+    from {
+      opacity: 0;
+      transform: translateX(1.2rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes quick-nav-slide-in-bottom {
+    from {
+      opacity: 0;
+      transform: translateY(1.2rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .site-nav :global(astro-theme-toggle) {
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    display: inline-flex;
+    transition: color 0.15s ease-out;
+  }
+
+  .site-nav :global(astro-theme-toggle:hover) {
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 768px) {
+    .site-header {
+      margin-top: -1.75rem;
+      margin-bottom: 1.75rem;
+      padding-top: 1.75rem;
+    }
+
+    .site-brand {
+      width: 4.5rem;
+      height: 2.8125rem;
+    }
+
+    .brand-logo {
+      width: 4.5rem;
+    }
+
+    .nav-actions {
+      margin-left: auto;
+      gap: 0.55rem;
+    }
+
+    .quick-nav-backdrop {
+      background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    }
+
+    .quick-nav-panel {
+      top: auto;
+      left: 0;
+      width: 100%;
+      max-height: min(28rem, calc(100dvh - 4.5rem));
+      padding: 0.7rem 1rem max(1rem, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+      border-left: 0;
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 -0.8rem 2.4rem color-mix(in srgb, var(--text-primary) 14%, transparent);
+      animation-name: quick-nav-slide-in-bottom;
+    }
+
+    .quick-nav-panel-head {
+      position: relative;
+      padding-top: 0.55rem;
+    }
+
+    .quick-nav-panel-head::before {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 2.4rem;
+      height: 0.2rem;
+      border-radius: 999px;
+      background-color: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+      content: '';
+      transform: translateX(-50%);
+    }
+
+    .quick-nav-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
+    }
+
+    .quick-nav-link {
+      min-height: 3.2rem;
+      padding: 0.5rem;
+    }
+
+    .quick-nav-description {
+      font-size: 0.72rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .quick-nav-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quick-nav-toggle,
+    .quick-nav-backdrop,
+    .quick-nav-close,
+    .quick-nav-panel,
+    .quick-nav-link {
+      animation: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__headerState ||= {
+      installed: false
+    })
+
+    function setupHeaderScrollState() {
+      const header = document.querySelector('.site-header')
+      if (!header || header.dataset.scrollStateBound === 'true') return
+      header.dataset.scrollStateBound = 'true'
+
+      const syncScrolledState = () => {
+        header.classList.toggle('is-scrolled', window.scrollY > 12)
+      }
+
+      syncScrolledState()
+      window.addEventListener('scroll', syncScrolledState, { passive: true })
+      document.addEventListener('astro:before-swap', () => {
+        window.removeEventListener('scroll', syncScrolledState)
+      })
+    }
+
+    setupHeaderScrollState()
+
+    function setupQuickNav() {
+      const root = document.querySelector('[data-quick-nav]')
+      const toggle = root?.querySelector('[data-quick-nav-toggle]')
+      const backdrop = document.querySelector('[data-quick-nav-backdrop]')
+      const panel = document.querySelector('[data-quick-nav-panel]')
+      const closeButtons = document.querySelectorAll('[data-quick-nav-close]')
+      if (
+        !root ||
+        !toggle ||
+        !backdrop ||
+        !panel ||
+        !closeButtons ||
+        root.dataset.quickNavBound === 'true'
+      )
+        return
+
+      root.dataset.quickNavBound = 'true'
+
+      const setOpen = (open) => {
+        toggle.setAttribute('aria-expanded', String(open))
+        toggle.setAttribute('aria-label', open ? 'Close quick navigation' : 'Open quick navigation')
+        backdrop.hidden = !open
+        panel.hidden = !open
+        document.documentElement.classList.toggle('quick-nav-open', open)
+      }
+
+      const isOpen = () => toggle.getAttribute('aria-expanded') === 'true'
+
+      const handleToggleClick = () => {
+        setOpen(!isOpen())
+      }
+
+      const handleCloseClick = () => {
+        setOpen(false)
+        toggle.focus()
+      }
+
+      const handleDocumentClick = (event) => {
+        const target = event.target
+        if (!isOpen() || toggle.contains(target) || panel.contains(target)) return
+
+        setOpen(false)
+      }
+
+      const handleKeydown = (event) => {
+        if (event.key !== 'Escape' || !isOpen()) return
+
+        setOpen(false)
+        toggle.focus()
+      }
+
+      const handlePanelClick = (event) => {
+        const target = event.target
+        if (target.closest('a')) setOpen(false)
+      }
+
+      const cleanup = () => {
+        setOpen(false)
+        toggle.removeEventListener('click', handleToggleClick)
+        panel.removeEventListener('click', handlePanelClick)
+        document.removeEventListener('click', handleDocumentClick)
+        document.removeEventListener('keydown', handleKeydown)
+        backdrop.removeEventListener('click', handleCloseClick)
+        closeButtons.forEach((button) => button.removeEventListener('click', handleCloseClick))
+        document.documentElement.classList.remove('quick-nav-open')
+        root.dataset.quickNavBound = 'false'
+      }
+
+      toggle.addEventListener('click', handleToggleClick)
+      backdrop.addEventListener('click', handleCloseClick)
+      closeButtons.forEach((button) => button.addEventListener('click', handleCloseClick))
+      panel.addEventListener('click', handlePanelClick)
+      document.addEventListener('click', handleDocumentClick)
+      document.addEventListener('keydown', handleKeydown)
+      document.addEventListener('astro:before-swap', cleanup, { once: true })
+    }
+
+    window.__setupHeaderScrollState = setupHeaderScrollState
+    window.__setupQuickNav = setupQuickNav
+    setupQuickNav()
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:page-load', setupHeaderScrollState)
+      document.addEventListener('astro:page-load', setupQuickNav)
+    }
+  })()
+</script>

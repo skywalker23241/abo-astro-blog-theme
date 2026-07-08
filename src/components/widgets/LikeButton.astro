@@ -1,0 +1,207 @@
+---
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+---
+
+<div class="like-widget" data-like-slug={slug}>
+  <button type="button" class="like-button" aria-label="Like this post">
+    <svg
+      class="like-icon"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+      ></path>
+    </svg>
+    <span class="like-label">Like</span>
+    <span class="like-count" aria-live="polite">·</span>
+  </button>
+  <span class="like-hint" aria-hidden="true">Thanks for reading.</span>
+</div>
+
+<style>
+  .like-widget {
+    margin: 4rem 0 1.75rem 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .like-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: inherit;
+    font-size: var(--font-size-s);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.4rem 0.95rem;
+    cursor: pointer;
+    transition:
+      color 0.15s ease-out,
+      border-color 0.15s ease-out,
+      background-color 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+
+  .like-button:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+  }
+
+  .like-button:active {
+    transform: scale(0.97);
+  }
+
+  .like-button.is-liked {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+    background: var(--code-bg);
+  }
+
+  .like-button.is-liked .like-icon {
+    fill: currentColor;
+  }
+
+  .like-button.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .like-icon {
+    flex-shrink: 0;
+    transition: transform 0.2s ease-out;
+  }
+
+  .like-button.is-liked .like-icon {
+    animation: like-pop 0.35s ease-out;
+  }
+
+  @keyframes like-pop {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.25);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .like-count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+    min-width: 0.5rem;
+  }
+
+  .like-button.is-liked .like-count,
+  .like-button:hover .like-count {
+    color: var(--text-primary);
+  }
+
+  .like-hint {
+    font-size: var(--font-size-s);
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-family: var(--serif);
+  }
+
+  @media (max-width: 520px) {
+    .like-widget {
+      margin-top: 3rem;
+      justify-content: flex-start;
+    }
+
+    .like-hint {
+      display: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__likeButtonState ||= {
+      installed: false
+    })
+
+    function initLikeWidgets() {
+      const widgets = document.querySelectorAll('.like-widget[data-like-slug]')
+      widgets.forEach((widget) => {
+        if (widget.dataset.likeInit === '1') return
+        widget.dataset.likeInit = '1'
+
+        const slug = widget.dataset.likeSlug
+        if (!slug) return
+
+        const button = widget.querySelector('.like-button')
+        const countEl = widget.querySelector('.like-count')
+        if (!button || !countEl) return
+
+        const storageKey = `post-liked:${slug}`
+        const liked = localStorage.getItem(storageKey) === '1'
+        if (liked) button.classList.add('is-liked')
+
+        const render = (count) => {
+          countEl.textContent = count > 0 ? String(count) : '·'
+        }
+
+        fetch(`/api/like?slug=${encodeURIComponent(slug)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data && typeof data.count === 'number') render(data.count)
+          })
+          .catch(() => {})
+
+        button.addEventListener('click', async () => {
+          if (button.classList.contains('is-liked') || button.classList.contains('is-loading'))
+            return
+          button.classList.add('is-loading')
+          try {
+            const res = await fetch('/api/like', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ slug })
+            })
+            if (!res.ok) throw new Error('like failed')
+            const data = await res.json()
+            if (typeof data?.count === 'number') render(data.count)
+            localStorage.setItem(storageKey, '1')
+            button.classList.add('is-liked')
+          } catch {
+            // silent failure — user can retry
+          } finally {
+            button.classList.remove('is-loading')
+          }
+        })
+      })
+    }
+
+    window.__initLikeWidgets = initLikeWidgets
+
+    if (document.readyState !== 'loading') initLikeWidgets()
+    else document.addEventListener('DOMContentLoaded', initLikeWidgets, { once: true })
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:page-load', initLikeWidgets)
+    }
+  })()
+</script>

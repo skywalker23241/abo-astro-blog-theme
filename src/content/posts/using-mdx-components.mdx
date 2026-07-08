@@ -1,0 +1,44 @@
+---
+title: 在 MDX 中使用组件
+pubDate: '2026-07-02'
+description: MDX 文章可以直接导入 Astro 组件和图标，让文章拥有更丰富的交互与视觉效果。
+---
+
+import Card from '@/components/Card.astro'
+import Lightbulb from 'phosphor-astro/Lightbulb.astro'
+import RocketLaunch from 'phosphor-astro/RocketLaunch.astro'
+
+把文章保存为 `.mdx` 后缀，就可以在正文中直接使用组件。
+
+## 卡片组件
+
+<Card>
+  <p>
+    <Lightbulb width={20} height={20} /> 这是一个 `Card` 组件，适合用来突出提示、引用或者补充说明。
+  </p>
+</Card>
+
+<Card>
+  <p>
+    <RocketLaunch width={20} height={20} /> 模板内置了 [Phosphor Icons](https://phosphoricons.com/)，按需导入即可使用，不会增加运行时负担。
+  </p>
+</Card>
+
+## 用法
+
+在 MDX 文件顶部（frontmatter 之后）导入组件：
+
+```mdx
+import Card from '@/components/Card.astro'
+import Lightbulb from 'phosphor-astro/Lightbulb.astro'
+
+<Card>
+  <p>
+    <Lightbulb width={20} height={20} /> 你的内容
+  </p>
+</Card>
+```
+
+`@/` 是指向 `src/` 的路径别名，在 `tsconfig.json` 中配置。
+
+普通 Markdown 语法在 MDX 中依然完全可用，所以你可以只在需要的地方使用组件，其余部分照常写 Markdown。

@@ -1,0 +1,48 @@
+<script is:inline>
+  ;(function () {
+    if (window.__imageOptimizerInstalled) {
+      window.__scheduleImageOptimizer?.()
+      return
+    }
+    window.__imageOptimizerInstalled = true
+
+    let imageOptimizerPending = false
+
+    // Global handler: Automatically remove the img-placeholder class after images are loaded
+    function removeImgPlaceholder() {
+      document.querySelectorAll('img.img-placeholder').forEach(function (img) {
+        if (img.complete) {
+          img.classList.remove('img-placeholder')
+        } else if (img.dataset.imageOptimizerBound !== '1') {
+          img.dataset.imageOptimizerBound = '1'
+          img.addEventListener(
+            'load',
+            function () {
+              img.classList.remove('img-placeholder')
+            },
+            { once: true }
+          )
+        }
+      })
+    }
+
+    function scheduleImageOptimizer() {
+      if (imageOptimizerPending) return
+      imageOptimizerPending = true
+      requestAnimationFrame(() => {
+        imageOptimizerPending = false
+        removeImgPlaceholder()
+      })
+    }
+
+    window.__scheduleImageOptimizer = scheduleImageOptimizer
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleImageOptimizer, { once: true })
+    } else {
+      scheduleImageOptimizer()
+    }
+    document.addEventListener('astro:after-swap', scheduleImageOptimizer)
+    document.addEventListener('astro:page-load', scheduleImageOptimizer)
+  })()
+</script>

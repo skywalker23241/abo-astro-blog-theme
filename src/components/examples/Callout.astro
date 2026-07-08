@@ -1,0 +1,261 @@
+---
+interface Props {
+  type?: 'note' | 'info' | 'tip' | 'warning' | 'danger' | 'quote'
+  title?: string
+  collapsible?: boolean
+  open?: boolean
+}
+
+import Note from 'phosphor-astro/Note.astro'
+import Info from 'phosphor-astro/Info.astro'
+import CheckCircle from 'phosphor-astro/CheckCircle.astro'
+import Warning from 'phosphor-astro/Warning.astro'
+import Fire from 'phosphor-astro/Fire.astro'
+import Quotes from 'phosphor-astro/Quotes.astro'
+import CaretDown from 'phosphor-astro/CaretDown.astro'
+
+const { type = 'note', title = '', collapsible = false, open = false } = Astro.props as Props
+---
+
+<details class={`callout ${type}`} {open} data-collapsible={collapsible}>
+  <summary class="callout-header">
+    <span class="callout-icon">
+      {type === 'note' && <Note width={20} height={20} />}
+      {type === 'info' && <Info width={20} height={20} />}
+      {type === 'tip' && <CheckCircle width={20} height={20} />}
+      {type === 'warning' && <Warning width={20} height={20} />}
+      {type === 'danger' && <Fire width={20} height={20} />}
+      {type === 'quote' && <Quotes width={20} height={20} />}
+    </span>
+    <span class="callout-title">{title || type.toUpperCase()}</span>
+    {
+      collapsible && (
+        <span class="callout-toggle">
+          <CaretDown width={20} height={20} />
+        </span>
+      )
+    }
+  </summary>
+  <div class="callout-content">
+    <slot />
+  </div>
+</details>
+
+<style>
+  .callout {
+    border: 1px solid;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--callout-bg, #f8f9fa);
+    transition: all 0.2s ease;
+  }
+
+  .callout-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--text-primary);
+  }
+
+  .callout-content {
+    margin-top: 0.5rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    overflow: hidden;
+    max-height: 1000px;
+    transition:
+      max-height 0.3s ease,
+      margin-top 0.3s ease;
+  }
+
+  details:not([open]) .callout-content {
+    max-height: 0;
+    margin-top: 0;
+  }
+
+  .callout-toggle {
+    margin-left: auto;
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .callout-icon {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  details[open] .callout-toggle {
+    transform: rotate(180deg);
+  }
+
+  html:not(.dark) .callout.note {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+  html:not(.dark) .callout.info {
+    border-color: #6366f1;
+    background: #eef2ff;
+  }
+  html:not(.dark) .callout.tip {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+  html:not(.dark) .callout.warning {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+  html:not(.dark) .callout.danger {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  html:not(.dark) .callout.quote {
+    border-color: #6b7280;
+    background: #f9fafb;
+    font-style: italic;
+  }
+
+  html.dark .callout.note {
+    border-color: #60a5fa;
+    background: #1e3a8a;
+  }
+  html.dark .callout.info {
+    border-color: #818cf8;
+    background: #312e81;
+  }
+  html.dark .callout.tip {
+    border-color: #34d399;
+    background: #064e3b;
+  }
+  html.dark .callout.warning {
+    border-color: #fbbf24;
+    background: #78350f;
+  }
+  html.dark .callout.danger {
+    border-color: #f87171;
+    background: #7f1d1d;
+  }
+  html.dark .callout.quote {
+    border-color: #9ca3af;
+    background: #374151;
+    font-style: italic;
+  }
+
+  html:not(.dark) .callout.note .callout-header {
+    color: #1e40af;
+  }
+  html:not(.dark) .callout.info .callout-header {
+    color: #4338ca;
+  }
+  html:not(.dark) .callout.tip .callout-header {
+    color: #047857;
+  }
+  html:not(.dark) .callout.warning .callout-header {
+    color: #b45309;
+  }
+  html:not(.dark) .callout.danger .callout-header {
+    color: #b91c1c;
+  }
+  html:not(.dark) .callout.quote .callout-header {
+    color: #4b5563;
+  }
+
+  html.dark .callout.note .callout-header {
+    color: #93c5fd;
+  }
+  html.dark .callout.info .callout-header {
+    color: #a5b4fc;
+  }
+  html.dark .callout.tip .callout-header {
+    color: #6ee7b7;
+  }
+  html.dark .callout.warning .callout-header {
+    color: #fcd34d;
+  }
+  html.dark .callout.danger .callout-header {
+    color: #fca5a5;
+  }
+  html.dark .callout.quote .callout-header {
+    color: #d1d5db;
+  }
+
+  .callout > summary {
+    list-style: none;
+  }
+  .callout > summary::-webkit-details-marker {
+    display: none;
+  }
+</style>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__calloutState ||= {
+      initPending: false,
+      installed: false
+    })
+
+    function initCallouts() {
+      const allCallouts = document.querySelectorAll('.callout')
+      allCallouts.forEach((details) => {
+        if (details instanceof HTMLElement && details.dataset.calloutInit === '1') return
+        if (details instanceof HTMLElement) details.dataset.calloutInit = '1'
+
+        const detailElement = details
+        const content = detailElement.querySelector('.callout-content')
+
+        if (!content) return
+
+        // 初始化内容样式
+        content.style.transition = 'max-height 0.3s ease, margin-top 0.3s ease, opacity 0.3s ease'
+        content.style.overflow = 'hidden'
+
+        const updateHeight = () => {
+          if (detailElement.open) {
+            content.style.maxHeight = content.scrollHeight + 'px'
+            content.style.marginTop = '0.5rem'
+            content.style.opacity = '1'
+          } else {
+            content.style.maxHeight = '0'
+            content.style.marginTop = '0'
+            content.style.opacity = '0'
+          }
+        }
+
+        // 监听 toggle 事件
+        detailElement.addEventListener('toggle', updateHeight)
+
+        // 初始化状态
+        updateHeight()
+      })
+    }
+
+    function scheduleCalloutInit() {
+      if (state.initPending) return
+      state.initPending = true
+      requestAnimationFrame(() => {
+        state.initPending = false
+        initCallouts()
+      })
+    }
+
+    window.__scheduleCalloutInit = scheduleCalloutInit
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleCalloutInit, { once: true })
+    } else {
+      scheduleCalloutInit()
+    }
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:after-swap', scheduleCalloutInit)
+      document.addEventListener('astro:page-load', scheduleCalloutInit)
+    }
+  })()
+</script>

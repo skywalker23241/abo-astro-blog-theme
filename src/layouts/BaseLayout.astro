@@ -1,0 +1,53 @@
+---
+import { themeConfig } from '@/config'
+import { ClientRouter } from 'astro:transitions'
+
+import FaviconThemeSwitcher from '@/components/ui/FaviconThemeSwitcher.astro'
+import BackToTop from '@/components/ui/BackToTop.astro'
+import GlimmPageTransition from '@/components/layout/GlimmPageTransition.astro'
+import type { LayoutProps } from '@/types'
+
+type Props = LayoutProps
+
+const language = (themeConfig.site.language || 'en-US').replace('_', '-')
+const fadeAnimation = themeConfig.general.fadeAnimation
+---
+
+<html lang={language}>
+  <head>
+    <script is:inline>
+      /* eslint-disable no-var */
+      // Make customElements.define idempotent so component scripts that get
+      // re-executed during view-transition navigations (e.g. astro-theme-toggle)
+      // don't throw "already defined" on every navigation.
+      ;(function () {
+        if (window.__customElementsDefineGuarded) return
+        window.__customElementsDefineGuarded = true
+        var nativeDefine = customElements.define
+        customElements.define = function (name, ...args) {
+          if (customElements.get(name)) return
+          return nativeDefine.call(customElements, name, ...args)
+        }
+      })()
+    </script>
+    <slot name="head" />
+  </head>
+  <body data-copy-code={themeConfig.post.copyCode ? 'enabled' : 'disabled'}>
+    <FaviconThemeSwitcher />
+    <BackToTop />
+    {fadeAnimation && <GlimmPageTransition />}
+    {fadeAnimation && <ClientRouter />}
+
+    <div class="layout-wrapper">
+      <slot />
+    </div>
+  </body>
+</html>
+
+<style is:global>
+  .layout-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+</style>

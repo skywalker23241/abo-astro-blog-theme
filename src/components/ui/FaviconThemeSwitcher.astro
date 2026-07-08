@@ -1,0 +1,71 @@
+<script is:inline>
+  /* eslint-disable no-var */
+  // Assigned to a `var` (not a `class` declaration) so re-executing this inline
+  // script during a view-transition navigation can't throw a re-declaration
+  // SyntaxError — which would abort Astro's runScripts() and stop astro:page-load
+  // from firing, breaking every other component's initialization.
+  var FaviconThemeSwitcher = class {
+    constructor() {
+      this.faviconLink =
+        document.querySelector('link[rel="icon"][type="image/png"]') ||
+        document.querySelector('link[rel="icon"]') ||
+        document.querySelector('link[rel="shortcut icon"]') ||
+        document.querySelector('link[rel="apple-touch-icon"]')
+
+      if (!this.faviconLink) {
+        console.warn('Favicon link not found, skipping theme switcher')
+        return
+      }
+
+      this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      this.currentHref = null
+
+      this.mediaQuery.addEventListener('change', () => this.updateFavicon())
+      this.observer = new MutationObserver(() => this.updateFavicon())
+      this.observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      })
+      this.updateFavicon()
+    }
+
+    updateFavicon() {
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+      const isDark =
+        document.documentElement.classList.contains('dark') ||
+        bg === '#1a1a1a' ||
+        (!bg && this.mediaQuery.matches)
+      const href = isDark ? '/favicon-dark.png' : '/favicon.png'
+      if (this.currentHref === href) return
+      this.currentHref = href
+      this.faviconLink.href = href
+    }
+  }
+
+  // Initialize favicon theme switcher
+  function init() {
+    if (window.__faviconThemeSwitcherInstance) {
+      window.__faviconThemeSwitcherInstance.updateFavicon()
+      return
+    }
+
+    try {
+      window.__faviconThemeSwitcherInstance = new FaviconThemeSwitcher()
+    } catch (error) {
+      console.warn('Failed to initialize favicon theme switcher:', error)
+    }
+  }
+
+  // Initialize when DOM is ready, and re-initialize on every Astro page load.
+  // Guarded so re-executing this inline script on navigation doesn't stack
+  // duplicate listeners/observers.
+  if (!window.__faviconThemeSwitcherInstalled) {
+    window.__faviconThemeSwitcherInstalled = true
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init)
+    } else {
+      init()
+    }
+    document.addEventListener('astro:page-load', init)
+  }
+</script>

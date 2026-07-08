@@ -1,0 +1,218 @@
+---
+import IndexLayout from '@/layouts/IndexLayout.astro'
+import FormattedDate from '@/components/widgets/FormattedDate.astro'
+import { getSortedFilteredPosts } from '@/utils/draft'
+import { getCategoryFromTitle, stripCategoryPrefix } from '@/utils/category'
+
+const pageTitle = '分类'
+const pageDescription = '按文章标题前缀自动聚合的分类页'
+const posts = await getSortedFilteredPosts()
+
+const categoryMap = new Map<string, typeof posts>()
+for (const post of posts) {
+  const category = getCategoryFromTitle(post.data.title) ?? '未分类'
+  if (!categoryMap.has(category)) categoryMap.set(category, [])
+  categoryMap.get(category)!.push(post)
+}
+
+const categories = [...categoryMap.entries()].sort((a, b) => b[1].length - a[1].length)
+const totalPosts = posts.length
+const totalCategories = categories.length
+---
+
+<IndexLayout title={pageTitle} description={pageDescription}>
+  <section class="categories-page">
+    <header class="categories-header">
+      <h1>分类</h1>
+      <p>
+        <span>{totalCategories} 个分类</span>
+        <span>{totalPosts} 篇文章</span>
+      </p>
+    </header>
+    <ul class="category-tabs">
+      {
+        categories.map(([name, postsInCategory]) => (
+          <li>
+            <a href={`#cat-${encodeURIComponent(name)}`}>
+              <span>{name}</span>
+              <span class="count">{postsInCategory.length}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="category-list">
+      {
+        categories.map(([name, postsInCategory]) => (
+          <section id={`cat-${encodeURIComponent(name)}`} class="category-section">
+            <h2>{name}</h2>
+            <ul class="post-list">
+              {postsInCategory.map((post) => (
+                <li>
+                  <a href={`/${post.id}/`} class="post-link">
+                    <time class="post-date" datetime={post.data.pubDate.toISOString()}>
+                      <FormattedDate date={post.data.pubDate} format="YYYY-MM-DD" context="list" />
+                    </time>
+                    <span class="post-title">
+                      {post.data.displayTitle ||
+                        stripCategoryPrefix(post.data.title) ||
+                        post.data.title}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+  </section>
+</IndexLayout>
+
+<style>
+  .categories-header {
+    margin-bottom: 1.2rem;
+  }
+
+  .categories-header h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.75rem;
+  }
+
+  .categories-header p {
+    display: flex;
+    gap: 0.8rem;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+  }
+
+  .category-tabs {
+    margin: 0 0 2rem;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .category-tabs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border: none;
+    border-radius: 999px;
+    background-color: var(--selection);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    transition:
+      color 0.15s ease-out,
+      background-color 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+
+  .category-tabs a:hover {
+    color: var(--text-primary);
+    background-color: color-mix(in srgb, var(--selection) 80%, transparent);
+    transform: translateY(-0.08rem);
+  }
+
+  .count {
+    opacity: 0.75;
+    font-family: var(--mono);
+  }
+
+  .category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .category-section {
+    scroll-margin-top: 7rem;
+  }
+
+  .category-section h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .post-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .post-link {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    padding: 0.14rem 0.35rem;
+    border-radius: 6px;
+    transition:
+      background-color 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+
+  .post-link:hover {
+    background-color: color-mix(in srgb, var(--selection) 82%, transparent);
+    transform: translateX(0.12rem);
+  }
+
+  .post-link:hover .post-title {
+    color: var(--text-primary);
+  }
+
+  .post-date {
+    flex-shrink: 0;
+    min-width: 5.4rem;
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+    font-family: var(--mono);
+  }
+
+  .post-title {
+    min-width: 0;
+    font-size: 0.84rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 520px) {
+    .category-section {
+      scroll-margin-top: 6rem;
+    }
+
+    .categories-header p {
+      flex-wrap: wrap;
+      gap: 0.45rem 0.8rem;
+    }
+
+    .post-link {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.05rem;
+      padding-top: 0.28rem;
+      padding-bottom: 0.28rem;
+    }
+
+    .post-date {
+      min-width: 0;
+      font-size: 0.68rem;
+    }
+
+    .post-title {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.45;
+    }
+  }
+</style>

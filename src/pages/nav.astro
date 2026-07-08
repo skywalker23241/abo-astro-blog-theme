@@ -1,0 +1,238 @@
+---
+import IndexLayout from '@/layouts/IndexLayout.astro'
+import linkData from '../data/links.json'
+import MagnifyingGlass from 'phosphor-astro/MagnifyingGlass.astro'
+
+const pageTitle = 'Bookmarks'
+const pageDescription = 'A collection of frequently used sites'
+
+interface LinkItem {
+  name: string
+  url: string
+}
+
+interface Category {
+  category: string
+  items: LinkItem[]
+}
+
+const getFavicon = (url: string) => {
+  try {
+    const domain = new URL(url).hostname
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+  } catch {
+    return ''
+  }
+}
+---
+
+<IndexLayout title={pageTitle} description={pageDescription}>
+  <div class="nav-page">
+    <div class="search-row">
+      <form action="https://www.google.com/search" target="_blank">
+        <MagnifyingGlass width={14} height={14} class="icon" />
+        <input type="text" name="q" placeholder="Google" autocomplete="off" />
+      </form>
+      <form action="https://www.baidu.com/s" target="_blank">
+        <MagnifyingGlass width={14} height={14} class="icon" />
+        <input type="text" name="wd" placeholder="Baidu" autocomplete="off" />
+      </form>
+    </div>
+
+    <div class="bookmark-search">
+      <MagnifyingGlass width={14} height={14} class="icon" />
+      <input type="text" id="nav-search" placeholder="Search bookmarks..." autocomplete="off" />
+    </div>
+
+    {
+      linkData.map((group: Category) => (
+        <section class="nav-section">
+          <h2>{group.category}</h2>
+          <div class="grid">
+            {group.items.map((item) => (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={item.name}
+                class="nav-item"
+              >
+                <img src={getFavicon(item.url)} alt="" loading="lazy" />
+                <span>{item.name}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</IndexLayout>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__navSearchState ||= {
+      installed: false
+    })
+
+    function initNavSearch() {
+      const searchInput = document.getElementById('nav-search')
+      if (!searchInput || searchInput.dataset.navSearchInit === '1') return
+      searchInput.dataset.navSearchInit = '1'
+
+      const sections = document.querySelectorAll('.nav-section')
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim()
+
+        sections.forEach((section) => {
+          const items = section.querySelectorAll('.nav-item')
+          let hasVisibleItem = false
+
+          items.forEach((item) => {
+            const name = item.querySelector('span').textContent.toLowerCase()
+            const url = item.getAttribute('href').toLowerCase()
+            const isMatch = name.includes(query) || url.includes(query)
+
+            item.style.display = isMatch ? 'flex' : 'none'
+            if (isMatch) hasVisibleItem = true
+          })
+
+          section.style.display = hasVisibleItem ? 'block' : 'none'
+        })
+      })
+    }
+
+    // Initialize on load and after view transitions
+    window.__initNavSearch = initNavSearch
+    initNavSearch()
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:page-load', initNavSearch)
+    }
+  })()
+</script>
+
+<style>
+  .nav-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .search-row form {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .bookmark-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-top: -0.5rem;
+  }
+
+  .bookmark-search input {
+    background: var(--code-bg);
+    border-color: transparent;
+  }
+
+  .bookmark-search input:focus {
+    background: var(--bg);
+    border-color: var(--text-tertiary);
+  }
+
+  .icon {
+    position: absolute;
+    left: 0.65rem;
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem 0.65rem 0.5rem 1.9rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--text-secondary);
+  }
+
+  input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.25rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-item:hover {
+    background: var(--code-bg);
+  }
+
+  img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 640px) {
+    .search-row {
+      flex-direction: column;
+    }
+
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

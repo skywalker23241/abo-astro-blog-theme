@@ -1,0 +1,283 @@
+@import './fonts.css';
+@import './post.css';
+
+:root {
+  --content-width: 48rem;
+
+  /* Typography */
+  --sans:
+    AlanSans-Regular, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --serif: Besley, Charter, Baskerville, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  --font-size-s: 0.875rem;
+  --font-size-m: 1.1rem;
+  --font-size-l: 1.125rem;
+  --font-size-xl: 1.3rem;
+  --font-size-2xl: 1.6rem;
+  --font-size-3xl: 2rem;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+
+  --spacing-s: -0.04em;
+  --spacing-m: -0.01em;
+
+  /* Light Mode (default) */
+  --bg: #fafaf7;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border: #e5e5e0;
+  --selection: rgba(0, 0, 0, 0.08);
+  --code-bg: #f0f0ea;
+  --mark: #fff4a3;
+  --accent: #1a1a1a;
+
+  /* Syntax Theme */
+  --astro-code-foreground: #1a1a1a;
+  --astro-code-background: #f0f0ea;
+  --astro-code-token-constant: #1a1a1a;
+  --astro-code-token-string: #1a1a1a;
+  --astro-code-token-comment: #999999;
+  --astro-code-token-keyword: #555555;
+  --astro-code-token-parameter: #1a1a1a;
+  --astro-code-token-function: #1a1a1a;
+  --astro-code-token-string-expression: #555555;
+  --astro-code-token-punctuation: #555555;
+  --astro-code-token-link: #555555;
+}
+
+html.dark {
+  --bg: #1a1a1a;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #707070;
+  --border: #333333;
+  --selection: rgba(255, 255, 255, 0.1);
+  --code-bg: #242424;
+  --mark: #5a5530;
+  --accent: #e8e8e8;
+
+  --astro-code-foreground: #e8e8e8;
+  --astro-code-background: #242424;
+  --astro-code-token-constant: #e8e8e8;
+  --astro-code-token-string: #e8e8e8;
+  --astro-code-token-comment: #707070;
+  --astro-code-token-keyword: #a0a0a0;
+  --astro-code-token-parameter: #e8e8e8;
+  --astro-code-token-function: #e8e8e8;
+  --astro-code-token-string-expression: #a0a0a0;
+  --astro-code-token-punctuation: #a0a0a0;
+  --astro-code-token-link: #a0a0a0;
+}
+
+html {
+  background-color: var(--bg);
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  font-family: var(--sans);
+  font-feature-settings:
+    'ss03' 1,
+    'palt' 1;
+  font-size: var(--font-size-m);
+  text-rendering: optimizeLegibility;
+  line-height: 1.75;
+  color: var(--text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  letter-spacing: var(--spacing-m);
+  padding: 2.5rem 1.5rem 2rem 1.5rem;
+  max-width: var(--content-width);
+  overscroll-behavior-y: contain;
+  transition: background-color 0.15s ease-out;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 1.75rem 1.25rem 1.5rem 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background-color: var(--selection);
+}
+
+:focus {
+  outline: 2px solid var(--text-tertiary);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--text-tertiary);
+  outline-offset: 2px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.date {
+  margin: 0;
+  font-weight: var(--font-weight-light);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  letter-spacing: var(--spacing-s);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings:
+    'tnum' 1,
+    'zero' 0,
+    'cv01' 1,
+    'cv02' 1,
+    'calt' 1,
+    'ss03' 1,
+    'ordn' 1;
+}
+
+.date .month {
+  letter-spacing: var(--spacing-m);
+}
+
+.sr-only {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px 1px 1px 1px);
+  clip: rect(1px, 1px, 1px, 1px);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Card — used in a few MDX widgets; keep but simplify */
+.card {
+  padding: 1rem 1.25rem;
+  background-color: var(--code-bg);
+  border-radius: 4px;
+  margin: 1.75em 0;
+  border: 1px solid var(--border);
+}
+
+.card-title {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.card-content {
+  margin: 0;
+}
+
+.card blockquote {
+  border-left: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.card cite {
+  display: block;
+  text-align: right;
+  margin-top: 0.5rem;
+  font-style: normal;
+  color: var(--text-secondary);
+}
+
+.card div[style*='text-align: center'] {
+  text-align: center;
+}
+
+details {
+  margin: 10px 0;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+summary {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+summary::marker {
+  content: '';
+}
+
+details[open] summary::marker {
+  content: '';
+}
+
+svg {
+  vertical-align: -0.3em;
+}
+
+.chat-bubble {
+  display: inline-block;
+  max-width: 80%;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.chat-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 1.5rem;
+  border-width: 8px;
+  border-style: solid;
+  border-color: var(--code-bg) transparent transparent transparent;
+}
+
+.chat-bubble .icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 0 0.25rem;
+}
+
+.blurred {
+  filter: blur(5px);
+  cursor: pointer;
+  transition: filter 0.3s ease;
+}
+
+.blurred:hover {
+  filter: blur(0);
+}

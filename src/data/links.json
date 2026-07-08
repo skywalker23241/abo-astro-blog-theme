@@ -1,0 +1,40 @@
+[
+  {
+    "category": "Dev",
+    "items": [
+      {
+        "name": "GitHub",
+        "url": "https://github.com/"
+      },
+      {
+        "name": "Astro Docs",
+        "url": "https://docs.astro.build/"
+      },
+      {
+        "name": "MDN",
+        "url": "https://developer.mozilla.org/"
+      },
+      {
+        "name": "Stack Overflow",
+        "url": "https://stackoverflow.com/"
+      }
+    ]
+  },
+  {
+    "category": "Reading",
+    "items": [
+      {
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com/"
+      },
+      {
+        "name": "Wikipedia",
+        "url": "https://www.wikipedia.org/"
+      },
+      {
+        "name": "The Verge",
+        "url": "https://www.theverge.com/"
+      }
+    ]
+  }
+]

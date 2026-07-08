@@ -1,0 +1,92 @@
+<script is:inline>
+  ;(function () {
+    if (window.__giscusLoaderInitialized) {
+      window.__scheduleGiscus?.()
+      return
+    }
+    window.__giscusLoaderInitialized = true
+
+    // Comments are powered by giscus (https://giscus.app).
+    // 1. Enable Discussions on your GitHub repository.
+    // 2. Install the giscus app and configure it at https://giscus.app.
+    // 3. Fill in the four values below with the ones giscus generates for you.
+    // Comments stay disabled (nothing is rendered) until 'data-repo' is set.
+    const GISCUS_ATTRS = {
+      'data-repo': '', // e.g. 'your-username/your-repo'
+      'data-repo-id': '',
+      'data-category': 'General',
+      'data-category-id': '',
+      'data-mapping': 'pathname',
+      'data-strict': '0',
+      'data-reactions-enabled': '1',
+      'data-emit-metadata': '0',
+      'data-input-position': 'bottom',
+      'data-theme': 'transparent_dark',
+      'data-lang': 'en'
+    }
+
+    function mountGiscus(container) {
+      if (!container || container.dataset.giscusHydrated === 'true') return
+
+      const script = document.createElement('script')
+      script.src = 'https://giscus.app/client.js'
+      script.async = true
+      script.crossOrigin = 'anonymous'
+
+      Object.entries(GISCUS_ATTRS).forEach(function (entry) {
+        script.setAttribute(entry[0], entry[1])
+      })
+
+      container.dataset.giscusHydrated = 'true'
+      container.innerHTML = ''
+      container.appendChild(script)
+    }
+
+    let giscusObserver = null
+    let giscusSchedulePending = false
+
+    function hydrate() {
+      if (!GISCUS_ATTRS['data-repo']) return
+
+      const container = document.getElementById('giscus-container')
+      if (!container || !container.isConnected) return
+      if (container.dataset.giscusHydrated === 'true') return
+
+      if (!('IntersectionObserver' in window)) {
+        mountGiscus(container)
+        return
+      }
+
+      giscusObserver?.disconnect()
+      giscusObserver = new IntersectionObserver(
+        function (entries, currentObserver) {
+          if (
+            !entries.some(function (e) {
+              return e.isIntersecting
+            })
+          )
+            return
+          currentObserver.disconnect()
+          mountGiscus(container)
+        },
+        { rootMargin: '200px 0px' }
+      )
+
+      giscusObserver.observe(container)
+    }
+
+    function schedule() {
+      if (giscusSchedulePending) return
+      giscusSchedulePending = true
+      requestAnimationFrame(() => {
+        giscusSchedulePending = false
+        hydrate()
+      })
+    }
+
+    window.__scheduleGiscus = schedule
+    schedule()
+    document.addEventListener('astro:after-swap', schedule)
+    document.addEventListener('astro:page-load', schedule)
+  })()
+</script>

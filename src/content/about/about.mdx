@@ -1,0 +1,41 @@
+---
+title: 'About'
+---
+
+import MaskHappy from 'phosphor-astro/MaskHappy.astro'
+import MaskSad from 'phosphor-astro/MaskSad.astro'
+import SealCheck from 'phosphor-astro/SealCheck.astro'
+import Cheers from 'phosphor-astro/Cheers.astro'
+import Translate from 'phosphor-astro/Translate.astro'
+import Card from '@/components/Card.astro'
+
+<Card>
+  <p>
+    Howdy Amigo! <MaskHappy width={20} height={20} />
+  </p>
+  <p>
+    I'm Your Name, a developer <SealCheck width={20} height={20} />
+  </p>
+  <p>
+    Welcome to my blog, Enjoy! <Cheers width={20} height={20} />
+  </p>
+</Card>
+
+<Card>
+
+> <MaskSad width={20} height={20} /> [**Panem et
+> circenses**](https://en.wikipedia.org/wiki/Bread_and_circuses)
+
+<div style="text-align: right"><cite>— Juvenal, Satire 10.77–81</cite></div>
+<div style="text-align: center">
+
+<sup>
+  <Translate width={20} height={20} />
+</sup>
+<span class="blurred">
+  <sup>"Give them bread and circuses, and they will never revolt."</sup>
+</span>
+
+</div>
+
+</Card>

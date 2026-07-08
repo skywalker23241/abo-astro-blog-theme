@@ -1,0 +1,159 @@
+---
+import IndexLayout from '@/layouts/IndexLayout.astro'
+
+const pageTitle = 'Now'
+const pageDescription = 'What I am focused on right now'
+---
+
+<IndexLayout title={pageTitle} description={pageDescription}>
+  <div class="now-page">
+    <h1>Now</h1>
+    <p class="lede">
+      This is a <a href="https://nownownow.com/about" target="_blank" rel="noopener noreferrer"
+        >now</a
+      > page — a snapshot of what I'm currently focused on.
+    </p>
+
+    <section class="now-section">
+      <h2>Life</h2>
+      <p>Your City, Your Country</p>
+    </section>
+
+    <section class="now-section">
+      <h2>Work</h2>
+      <p>
+        Currently working at <a href="https://example.com/" target="_blank" rel="noopener noreferrer"
+          >Acme Inc.</a
+        >
+      </p>
+    </section>
+
+    <section class="now-section">
+      <h2>Learning</h2>
+      <ul class="learning-list">
+        <li>
+          <a
+            href="https://docs.astro.build/en/tutorial/0-introduction/"
+            target="_blank"
+            rel="noopener noreferrer">Astro</a
+          >
+        </li>
+        <li>TypeScript</li>
+        <li>A new language</li>
+      </ul>
+    </section>
+
+    <section class="now-section">
+      <h2>Play</h2>
+      <div class="game-badges">
+        <a
+          href="https://store.steampowered.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="game-badge"
+        >
+          <img
+            alt="Steam"
+            src="https://img.shields.io/badge/Steam-171a21?style=flat-square&logo=steam&logoColor=white"
+          />
+        </a>
+        <a
+          href="https://open.spotify.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="game-badge"
+        >
+          <img
+            alt="Spotify"
+            src="https://img.shields.io/badge/Spotify-1DB954?style=flat-square&logo=spotify&logoColor=white"
+          />
+        </a>
+      </div>
+    </section>
+  </div>
+</IndexLayout>
+
+<style>
+  .now-page {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .now-page h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+  }
+
+  .lede {
+    margin: 0 0 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .lede a {
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 0 0.12em;
+    transition: background-color 0.15s ease-out;
+  }
+
+  .lede a:hover {
+    background-color: var(--selection);
+  }
+
+  .now-section {
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .now-section h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .now-section p {
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .now-section a {
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 0 0.12em;
+    transition: background-color 0.15s ease-out;
+  }
+
+  .now-section a:hover {
+    background-color: var(--selection);
+  }
+
+  .learning-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.8;
+  }
+
+  .game-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .game-badge {
+    border: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .game-badge:hover {
+    opacity: 0.7;
+  }
+
+  .game-badge img {
+    display: block;
+    height: 22px;
+  }
+</style>

@@ -1,0 +1,182 @@
+<div id="image-viewer" class="image-viewer" aria-hidden="true">
+  <img id="image-viewer-img" src="" alt="" />
+</div>
+
+<script is:inline>
+  ;(function () {
+    if (window.__imageViewerRegistered) {
+      window.__initImageViewer?.()
+      return
+    }
+    window.__imageViewerRegistered = true
+
+    let currentKeydownHandler = null
+    let currentProseObserver = null
+    let imageViewerInitPending = false
+
+    function initImageViewer() {
+      const viewer = document.getElementById('image-viewer')
+      const viewerImg = document.getElementById('image-viewer-img')
+
+      if (!viewer || !viewerImg || viewerImg.tagName !== 'IMG') return
+
+      function showImage(src, alt) {
+        if (viewerImg && src) {
+          viewerImg.src = src
+          viewerImg.alt = alt || ''
+        }
+        viewer.style.visibility = 'visible'
+        void viewer.offsetWidth
+        viewer.classList.add('active')
+        viewer.style.pointerEvents = 'auto'
+        viewer.setAttribute('aria-hidden', 'false')
+        document.body.classList.add('image-viewer-open')
+        document.body.style.overflow = 'hidden'
+        document.body.dataset.scrollY = window.scrollY.toString()
+        viewer.style.cursor = 'auto'
+        setTimeout(function () {
+          viewer.style.cursor = ''
+        }, 10)
+      }
+
+      function hideImage() {
+        viewer.classList.remove('active')
+        viewer.style.pointerEvents = 'none'
+        viewer.setAttribute('aria-hidden', 'true')
+        document.body.classList.remove('image-viewer-open')
+        document.body.style.overflow = ''
+      }
+
+      if (viewer.dataset.imageViewerInit !== '1') {
+        viewer.dataset.imageViewerInit = '1'
+
+        viewer.addEventListener('transitionend', function (e) {
+          if (e.propertyName === 'opacity' && !viewer.classList.contains('active')) {
+            viewer.style.visibility = 'hidden'
+            if (viewerImg) {
+              viewerImg.src = ''
+              viewerImg.alt = ''
+            }
+            viewer.style.cursor = 'auto'
+            setTimeout(function () {
+              viewer.style.cursor = ''
+            }, 10)
+          }
+        })
+
+        viewer.addEventListener('click', hideImage)
+
+        viewer.addEventListener(
+          'touchmove',
+          function (e) {
+            if (viewer.classList.contains('active')) {
+              e.preventDefault()
+            }
+          },
+          { passive: false }
+        )
+      }
+
+      function bindImageClickEvents() {
+        const previewImages = document.querySelectorAll('img[data-preview="true"]')
+        previewImages.forEach(function (img) {
+          if (img.__imageViewerBound) return
+          img.__imageViewerBound = true
+          img.style.cursor = 'zoom-in'
+          img.addEventListener('click', function (e) {
+            e.preventDefault()
+            showImage(e.target.src, e.target.alt || '')
+          })
+        })
+      }
+
+      // Clean up previous keydown handler to avoid stacking
+      if (currentKeydownHandler) {
+        document.removeEventListener('keydown', currentKeydownHandler)
+      }
+      currentKeydownHandler = function (e) {
+        if (e.key === 'Escape' && viewer.classList.contains('active')) {
+          hideImage()
+        }
+      }
+      document.addEventListener('keydown', currentKeydownHandler)
+
+      bindImageClickEvents()
+
+      currentProseObserver?.disconnect()
+      currentProseObserver = null
+
+      const proseEl = document.querySelector('.prose')
+      if (proseEl) {
+        currentProseObserver = new MutationObserver(function () {
+          bindImageClickEvents()
+        })
+        currentProseObserver.observe(proseEl, {
+          childList: true,
+          subtree: true
+        })
+      }
+
+      viewer.style.visibility = 'hidden'
+      viewer.style.pointerEvents = 'none'
+    }
+
+    function scheduleImageViewerInit() {
+      if (imageViewerInitPending) return
+      imageViewerInitPending = true
+      requestAnimationFrame(() => {
+        imageViewerInitPending = false
+        initImageViewer()
+      })
+    }
+
+    window.__initImageViewer = scheduleImageViewerInit
+    scheduleImageViewerInit()
+    document.addEventListener('astro:after-swap', scheduleImageViewerInit)
+    document.addEventListener('astro:page-load', scheduleImageViewerInit)
+  })()
+</script>
+
+<style>
+  .image-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    cursor: zoom-out;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .image-viewer.active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .image-viewer img {
+    min-width: 45rem;
+    max-width: 60vw;
+    max-height: 80vh;
+    object-fit: contain;
+    cursor: zoom-out;
+  }
+
+  @media (max-width: 768px) {
+    .image-viewer img {
+      min-width: 100vw;
+    }
+  }
+
+  body.image-viewer-open {
+    overflow: hidden;
+  }
+</style>

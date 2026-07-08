@@ -1,0 +1,141 @@
+---
+import FormattedDate from '@/components/widgets/FormattedDate.astro'
+import type { PostListProps } from '@/types'
+
+const { posts } = Astro.props as PostListProps
+
+const groups = new Map<number, typeof posts>()
+for (const post of posts) {
+  const year = post.data.pubDate.getFullYear()
+  if (!groups.has(year)) groups.set(year, [])
+  groups.get(year)!.push(post)
+}
+
+const years = [...groups.keys()].sort((a, b) => b - a)
+---
+
+<div class="post-list">
+  {
+    years.map((year) => (
+      <section class="year-group">
+        <h2 class="year-label">{year}</h2>
+        <ul>
+          {groups.get(year)!.map((post) => (
+            <li>
+              <a href={`/${post.id}/`} class="post-link">
+                <time class="post-date" datetime={post.data.pubDate.toISOString()}>
+                  <FormattedDate date={post.data.pubDate} format="MM-DD" context="list" />
+                </time>
+                <span class="post-title">{post.data.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+  }
+
+  .year-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .year-label {
+    font-size: 0.875rem;
+    font-weight: var(--font-weight-regular);
+    color: var(--text-tertiary);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  ul {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  li {
+    margin: 0;
+  }
+
+  .post-link {
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition:
+      color 0.15s ease-out,
+      background-color 0.15s ease-out,
+      transform 0.15s ease-out;
+    line-height: 1.4;
+  }
+
+  .post-link:hover {
+    background-color: color-mix(in srgb, var(--selection) 82%, transparent);
+    transform: translateX(0.15rem);
+  }
+
+  .post-link:hover .post-title {
+    color: var(--text-primary);
+  }
+
+  .post-link:hover .post-date {
+    opacity: 1;
+  }
+
+  .post-date {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    min-width: 2.75rem;
+    font-family: var(--mono);
+    opacity: 0.85;
+    transition: opacity 0.15s ease-out;
+  }
+
+  .post-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.05rem;
+    font-weight: 500;
+    transition: transform 0.15s ease-out;
+  }
+
+  .post-link:hover .post-title {
+    transform: translateX(0.08rem);
+  }
+
+  @media (max-width: 520px) {
+    .post-link {
+      gap: 0.85rem;
+      padding-right: 0.35rem;
+      padding-left: 0.35rem;
+    }
+
+    .post-date {
+      min-width: 3rem;
+      font-size: 0.76rem;
+    }
+  }
+</style>

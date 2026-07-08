@@ -1,0 +1,60 @@
+<script is:inline>
+  ;(function () {
+    const state = (window.__footnoteScrollState ||= {
+      initPending: false,
+      installed: false
+    })
+
+    function bindFootnoteEvents() {
+      const footnoteLinks = document.querySelectorAll(
+        '[data-footnote-ref], [data-footnote-backref]'
+      )
+
+      footnoteLinks.forEach((link) => {
+        if (link.dataset.footnoteScrollInit === '1') return
+        link.dataset.footnoteScrollInit = '1'
+
+        link.addEventListener('click', (e) => {
+          e.preventDefault()
+          const href = link.getAttribute('href')
+          if (!href) return
+
+          const target = document.querySelector(href)
+          if (!target) return
+
+          // Use fixed offset of 128px
+          const offset = 128
+
+          const targetPosition = target.getBoundingClientRect().top + window.scrollY - offset
+
+          window.scrollTo({
+            top: targetPosition
+          })
+        })
+      })
+    }
+
+    function scheduleFootnoteEvents() {
+      if (state.initPending) return
+      state.initPending = true
+      requestAnimationFrame(() => {
+        state.initPending = false
+        bindFootnoteEvents()
+      })
+    }
+
+    window.__scheduleFootnoteEvents = scheduleFootnoteEvents
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleFootnoteEvents, { once: true })
+    } else {
+      scheduleFootnoteEvents()
+    }
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:after-swap', scheduleFootnoteEvents)
+      document.addEventListener('astro:page-load', scheduleFootnoteEvents)
+    }
+  })()
+</script>

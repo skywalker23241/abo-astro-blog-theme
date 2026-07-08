@@ -1,0 +1,135 @@
+<canvas id="glimm-page-transition" aria-hidden="true" transition:persist></canvas>
+
+<script>
+  import { createShader, playSweep, type Direction, type PaletteName } from 'glimm'
+  import type { TransitionBeforePreparationEvent } from 'astro:transitions/client'
+
+  declare global {
+    interface Window {
+      __glimmPageTransitionInstalled?: boolean
+    }
+  }
+
+  const canvas = document.getElementById('glimm-page-transition') as HTMLCanvasElement | null
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+  if (canvas && !window.__glimmPageTransitionInstalled) {
+    window.__glimmPageTransitionInstalled = true
+
+    const shader = createShader({
+      canvas,
+      direction: 'ltr',
+      brightness: 0.92,
+      waveAmount: 0.85,
+      rippleAmount: 0.8,
+      swellAmount: 0.75
+    })
+
+    if (shader) {
+      const directions: Direction[] = ['ltr', 'rtl', 'ttb', 'btt']
+      const palettes: PaletteName[] = ['lagoon', 'azure', 'berry', 'citrus', 'prism']
+      const sweepMs = 420
+      const outroMs = 460
+      const peakAlpha = 0.96
+      const bandTight = 4.8
+
+      let activeSweep: ReturnType<typeof playSweep> | undefined
+      let transitionCount = 0
+      let navToken = 0
+      let covering = false
+      let pendingDirection: Direction = 'ltr'
+      let pendingPalette: PaletteName = 'lagoon'
+
+      // Drive the band from Astro's real navigation lifecycle instead of a fixed
+      // timer + a mid-animation navigate(), so the reveal can never outrun the
+      // actual page load (Bug 1) and the swap + script init always run normally
+      // through ClientRouter (Bug 2). Link clicks are handled by <ClientRouter />.
+      //
+      // before-preparation: sweep the band in to cover the viewport, freeze it,
+      // then hold that cover until the next page has actually been fetched. The
+      // DOM swap and script execution happen underneath the cover.
+      document.addEventListener('astro:before-preparation', (event) => {
+        if (prefersReducedMotion.matches) return
+
+        const prepEvent = event as TransitionBeforePreparationEvent
+        activeSweep?.cancel()
+
+        const token = ++navToken
+        const direction = directions[transitionCount % directions.length]
+        const palette = palettes[transitionCount % palettes.length]
+        transitionCount += 1
+        pendingDirection = direction
+        pendingPalette = palette
+        covering = true
+
+        const originalLoader = prepEvent.loader
+        prepEvent.loader = async () => {
+          const cover = playSweep(shader, {
+            direction,
+            palette,
+            sweepMs,
+            midpoint: 0.5,
+            peakAlpha,
+            bandTight,
+            easing: 'easeOutQuart'
+          })
+          activeSweep = cover
+
+          const loaded = originalLoader()
+          try {
+            await cover.midpoint // wait until the band fully covers the viewport
+            cover.cancel() // freeze it covering — playSweep would otherwise reveal
+            await loaded // hold the frozen cover until the new page is fetched
+          } catch (error) {
+            // Failed/aborted navigation that wasn't superseded by a newer one:
+            // clear the band so it doesn't stay stuck, then let ClientRouter
+            // handle its fallback.
+            if (token === navToken) {
+              covering = false
+              shader.setAlpha(0)
+              shader.setProgress(0)
+            }
+            throw error
+          }
+        }
+      })
+
+      // Reveal once the DOM has been swapped. We use after-swap (not page-load)
+      // because it fires before runScripts() — so even if a swapped-in script
+      // throws, the cover still lifts instead of freezing on screen. The new DOM
+      // is already in place here; components finish initializing under the band.
+      document.addEventListener('astro:after-swap', () => {
+        if (!covering) return
+        covering = false
+        activeSweep = playSweep(shader, {
+          direction: pendingDirection,
+          palette: pendingPalette,
+          sweepMs,
+          outroMs,
+          peakAlpha,
+          bandTight,
+          easing: 'easeOutQuart'
+        })
+      })
+    }
+  }
+</script>
+
+<style>
+  @supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none !important;
+    }
+  }
+
+  #glimm-page-transition {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    contain: strict;
+  }
+</style>

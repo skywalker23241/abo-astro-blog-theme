@@ -1,0 +1,14 @@
+---
+import { Toggle } from 'astro-theme-toggle'
+import ToggleLeft from 'phosphor-astro/ToggleLeft.astro'
+import ToggleRight from 'phosphor-astro/ToggleRight.astro'
+---
+
+<Toggle>
+  <Fragment slot="icon-light">
+    <ToggleLeft width={20} height={20} />
+  </Fragment>
+  <Fragment slot="icon-dark">
+    <ToggleRight width={20} height={20} />
+  </Fragment>
+</Toggle>
