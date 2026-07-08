@@ -21,7 +21,7 @@
     "@astrojs/check": "^0.9.8",
     "@astrojs/mdx": "^4.3.4",
     "@astrojs/netlify": "^6.5.9",
-    "@astrojs/sitemap": "^3.5.1",
+    "@astrojs/sitemap": "^3.7.3",
     "@netlify/blobs": "^8.2.0",
     "@playform/inline": "^0.1.2",
     "astro-og-canvas": "^0.7.0",
