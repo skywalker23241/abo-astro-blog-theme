@@ -28,7 +28,7 @@
     "astro-theme-toggle": "^0.7.0",
     "feed": "^5.1.0",
     "glimm": "^0.1.4",
-    "katex": "^0.16.22",
+    "katex": "^0.17.0",
     "markdown-it": "^14.1.0",
     "mdast-util-to-string": "^4.0.0",
     "node-html-parser": "^7.0.1",
