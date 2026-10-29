@@ -1,0 +1,32 @@
+---
+import '@/styles/global.css'
+import '@/styles/highlights-esports.css'
+import '@/styles/highlight-interactions.css'
+import BaseHead from '@/components/layout/BaseHead.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import SiteFrame from '@/components/layout/SiteFrame.astro'
+import Footer from '@/components/layout/Footer.astro'
+
+interface Props {
+  title: string
+  description: string
+  seoTitle?: string
+  noindex?: boolean
+}
+
+const { title, description, seoTitle, noindex } = Astro.props
+---
+
+<BaseLayout title={title} description={description} type="page" class="highlights-body">
+  <Fragment slot="head">
+    <BaseHead title={title} description={description} seoTitle={seoTitle} noindex={noindex} />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous" />
+  </Fragment>
+
+  <a class="replay-skip-link" href="#highlight-list-heading">跳至录像库</a>
+  <SiteFrame title={title} description={description}>
+    <slot />
+    <Fragment slot="rail"><slot name="rail" /></Fragment>
+    <Footer slot="footer" />
+  </SiteFrame>
+</BaseLayout>

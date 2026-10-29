@@ -4,11 +4,11 @@ import ToggleLeft from 'phosphor-astro/ToggleLeft.astro'
 import ToggleRight from 'phosphor-astro/ToggleRight.astro'
 ---
 
-<Toggle>
+<Toggle aria-label="切换浅色或深色主题">
   <Fragment slot="icon-light">
-    <ToggleLeft width={20} height={20} />
+    <ToggleLeft width="1.25rem" height="1.25rem" aria-hidden="true" />
   </Fragment>
   <Fragment slot="icon-dark">
-    <ToggleRight width={20} height={20} />
+    <ToggleRight width="1.25rem" height="1.25rem" aria-hidden="true" />
   </Fragment>
 </Toggle>

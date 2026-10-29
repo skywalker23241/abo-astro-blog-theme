@@ -4,11 +4,12 @@ import type { PostLayoutProps } from '@/types'
 import FormattedDate from '@/components/widgets/FormattedDate.astro'
 import FootnoteScroll from '@/components/widgets/FootnoteScroll.astro'
 import BaseHead from '@/components/layout/BaseHead.astro'
-import Header from '@/components/layout/Header.astro'
 import Footer from '@/components/layout/Footer.astro'
-import TableOfContents from '@/components/ui/TableOfContents.astro'
+import SiteFrame from '@/components/layout/SiteFrame.astro'
 import LikeButton from '@/components/widgets/LikeButton.astro'
+import RelatedPosts from '@/components/widgets/RelatedPosts.astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import SiteToast from '@/components/ui/SiteToast.astro'
 import CopyCode from '@/components/ui/CopyCode.astro'
 import GitHubCard from '@/components/ui/GitHubCard.astro'
 import ImageOptimizer from '@/components/ui/ImageOptimizer.astro'
@@ -17,7 +18,9 @@ import LinkCard from '@/components/ui/LinkCard.astro'
 import NeoDBCard from '@/components/ui/NeoDBCard.astro'
 import XPOST from '@/components/ui/XPOST.astro'
 import GiscusLoader from '@/components/widgets/GiscusLoader.astro'
+import PostViewTracker from '@/components/widgets/PostViewTracker.astro'
 import { getSortedFilteredPosts } from '@/utils/draft'
+import { getRelatedPosts } from '@/utils/related'
 import { buildExcerpt } from '@/utils/seo'
 import { renderInlineMarkdown } from '@/utils/markdown'
 
@@ -43,6 +46,7 @@ const nextPostLink = nextPost && {
   label: nextPost.data.displayTitle || nextPost.data.title
 }
 const ogImage = `/open-graph/${postSlug}.png`
+const relatedPosts = await getRelatedPosts(postSlug)
 const postDescription = description || buildExcerpt(body || '', themeConfig.site.description)
 const headingHtml = displayTitle ? renderInlineMarkdown(displayTitle) : title
 const seoTitle = `${title} · ${themeConfig.site.title}`
@@ -61,47 +65,57 @@ const seoTitle = `${title} · ${themeConfig.site.title}`
   />
   {hasMath && <link rel="stylesheet" href="/katex.min.css" slot="head" />}
 
-  <Header />
-
-  <main class="post-main">
-    <article class="prose">
-      {themeConfig.post.toc && <TableOfContents toc={toc} />}
-      <header class="post-header">
-        <h1 set:html={headingHtml} />
-        <div class="post-meta">
-          <FormattedDate date={pubDate} context="post" />
-          {
-            themeConfig.post.readingTime && readingTime && (
-              <>
-                <span class="meta-sep">·</span>
-                <span class="reading-time">{readingTime.text}</span>
-              </>
-            )
-          }
-        </div>
-      </header>
-      <slot />
-      <LikeButton slug={postSlug} />
-    </article>
-    <div id="giscus-container"></div>
-  </main>
+  <SiteFrame
+    title={title}
+    description={postDescription}
+    toc={themeConfig.post.toc ? toc : []}
+    readingTime={themeConfig.post.readingTime ? readingTime?.text : undefined}
+    recommendedPosts={relatedPosts}
+    isPost
+  >
+    <div class="post-main">
+      <article class="prose" data-pagefind-body>
+        <header class="post-header">
+          <div class="post-meta">
+            <span class="post-meta-dot" aria-hidden="true"></span>
+            <FormattedDate date={pubDate} context="post" />
+            {
+              themeConfig.post.readingTime && readingTime && (
+                <>
+                  <span class="meta-sep">·</span>
+                  <span class="reading-time">{readingTime.text}</span>
+                </>
+              )
+            }
+          </div>
+          <h1 set:html={headingHtml} />
+        </header>
+        <slot />
+        <LikeButton slug={postSlug} />
+        <RelatedPosts posts={relatedPosts} />
+      </article>
+      <div id="giscus-container"></div>
+      <PostViewTracker slug={postSlug} />
+    </div>
+    {
+      themeConfig.general.footer && (
+        <Footer slot="footer" previousPostLink={previousPostLink} nextPostLink={nextPostLink} />
+      )
+    }
+  </SiteFrame>
 
   {/* Post-content widget islands — only shipped on article pages. */}
   <GiscusLoader />
   <ImageOptimizer />
   <CopyCode />
+  <SiteToast />
   <GitHubCard />
   <XPOST />
   <NeoDBCard />
-  {themeConfig.post.imageViewer && <ImageViewer />}
+  {themeConfig.post.imageViewer.enabled && <ImageViewer />}
   {themeConfig.post.linkCard && <LinkCard />}
 
   <FootnoteScroll />
-  {
-    themeConfig.general.footer && (
-      <Footer previousPostLink={previousPostLink} nextPostLink={nextPostLink} />
-    )
-  }
 </BaseLayout>
 
 <style>
@@ -109,30 +123,42 @@ const seoTitle = `${title} · ${themeConfig.site.title}`
     flex: 1;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: var(--reading-width);
+    margin: 0 auto;
   }
 
   .post-header {
-    margin-top: 1.5rem;
-    margin-bottom: 4rem;
+    margin-top: 1.8rem;
+    margin-bottom: 3.75rem;
   }
 
   .post-header h1 {
-    margin: 0 0 0.6rem 0;
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.02em;
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 2.45rem);
+    font-weight: 600;
+    line-height: 1.28;
+    letter-spacing: -0.045em;
     color: var(--text-primary);
   }
 
   .post-meta {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
     color: var(--text-tertiary);
-    font-size: 0.875rem;
+    font-size: 0.68rem;
     font-family: var(--mono);
-    letter-spacing: 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .post-meta-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--index-accent);
   }
 
   .meta-sep {
@@ -146,11 +172,11 @@ const seoTitle = `${title} · ${themeConfig.site.title}`
   @media (max-width: 520px) {
     .post-header {
       margin-top: 1rem;
-      margin-bottom: 3rem;
+      margin-bottom: 2.8rem;
     }
 
     .post-header h1 {
-      font-size: 1.75rem;
+      font-size: 1.9rem;
     }
   }
 </style>

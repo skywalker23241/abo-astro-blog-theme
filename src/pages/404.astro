@@ -1,37 +1,51 @@
 ---
 import { themeConfig } from '@/config'
 import IndexLayout from '@/layouts/IndexLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import RailLinks from '@/components/layout/RailLinks.astro'
 ---
 
-<IndexLayout title={`404 - ${themeConfig.site.title}`} description="Not Found">
-  <div class="error-container">
-    <p>页面未找到... ...</p>
-    <a href="/">回到主页 →</a>
+<IndexLayout title={`404 · ${themeConfig.site.title}`} description="Not Found" noindex>
+  <div class="error-page minimal-page">
+    <MinimalPageHeader meta="04 / 04" title="404" metaLabel="页面未找到" />
+    <div class="error-container minimal-index-row">
+      <span class="minimal-index-marker" aria-hidden="true">00</span>
+      <a href="/">返回首页</a>
+    </div>
   </div>
+
+  <RailLinks
+    slot="rail"
+    title="继续浏览"
+    links={[
+      { href: '/blog/', label: '全部文章' },
+      { href: '/categories/', label: '分类与搜索' }
+    ]}
+  />
 
   <style>
     .error-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    .error-container p {
-      margin: 0;
+      align-items: center;
     }
 
     .error-container a {
+      display: block;
+      padding: 0.9rem 0.2rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
       color: var(--text-primary);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
       text-decoration: none;
-      font-size: var(--font-size-s);
-      box-shadow: inset 0 -0.28em 0 color-mix(in srgb, var(--selection) 100%, transparent);
-      transition: box-shadow 0.15s ease-out;
+      text-transform: uppercase;
+      transition:
+        padding 0.16s ease-out,
+        background-position var(--link-fill-duration) var(--link-fill-ease);
     }
 
     .error-container a:hover {
-      box-shadow: inset 0 -0.42em 0 color-mix(in srgb, var(--selection) 100%, transparent);
+      padding-left: 0.5rem;
     }
   </style>
 </IndexLayout>

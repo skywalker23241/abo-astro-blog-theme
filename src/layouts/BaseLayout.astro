@@ -1,42 +1,40 @@
 ---
 import { themeConfig } from '@/config'
-import { ClientRouter } from 'astro:transitions'
 
 import FaviconThemeSwitcher from '@/components/ui/FaviconThemeSwitcher.astro'
 import BackToTop from '@/components/ui/BackToTop.astro'
-import GlimmPageTransition from '@/components/layout/GlimmPageTransition.astro'
+import PageTransition from '@/components/ui/PageTransition.astro'
+import FontSizeControl from '@/components/ui/FontSizeControl.astro'
 import type { LayoutProps } from '@/types'
+import { ClientRouter } from 'astro:transitions'
 
 type Props = LayoutProps
 
 const language = (themeConfig.site.language || 'en-US').replace('_', '-')
-const fadeAnimation = themeConfig.general.fadeAnimation
+const { class: bodyClass } = Astro.props
+const enablePageTransitions = bodyClass !== 'highlights-body'
 ---
 
-<html lang={language}>
+<html lang={language} data-blog={enablePageTransitions ? '' : undefined}>
   <head>
-    <script is:inline>
-      /* eslint-disable no-var */
-      // Make customElements.define idempotent so component scripts that get
-      // re-executed during view-transition navigations (e.g. astro-theme-toggle)
-      // don't throw "already defined" on every navigation.
-      ;(function () {
-        if (window.__customElementsDefineGuarded) return
-        window.__customElementsDefineGuarded = true
-        var nativeDefine = customElements.define
-        customElements.define = function (name, ...args) {
-          if (customElements.get(name)) return
-          return nativeDefine.call(customElements, name, ...args)
+    {enablePageTransitions && <ClientRouter />}
+    <script is:inline data-astro-rerun>
+      try {
+        const size = localStorage.getItem('abo-reading-size')
+        if (size && ['100', '112.5', '125'].includes(size)) {
+          document.documentElement.dataset.readingSize = size
         }
-      })()
+      } catch {
+        // Reading controls also work when storage is unavailable.
+      }
     </script>
     <slot name="head" />
   </head>
-  <body data-copy-code={themeConfig.post.copyCode ? 'enabled' : 'disabled'}>
+  <body class={bodyClass} data-copy-code={themeConfig.post.copyCode ? 'enabled' : 'disabled'}>
+    {enablePageTransitions && <PageTransition />}
     <FaviconThemeSwitcher />
     <BackToTop />
-    {fadeAnimation && <GlimmPageTransition />}
-    {fadeAnimation && <ClientRouter />}
+    {enablePageTransitions && <FontSizeControl placement="desktop" />}
 
     <div class="layout-wrapper">
       <slot />

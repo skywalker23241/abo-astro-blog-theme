@@ -1,159 +1,55 @@
 ---
+import { themeConfig } from '@/config'
 import IndexLayout from '@/layouts/IndexLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import RailLinks from '@/components/layout/RailLinks.astro'
 
-const pageTitle = 'Now'
-const pageDescription = 'What I am focused on right now'
+// Replace these examples with your own updates; no external accounts are required.
+const sections = [
+  { id: 'life', title: '生活', content: '留一点时间阅读、散步，记录日常里值得记住的小事。' },
+  { id: 'learning', title: '学习', content: '学习用 Astro 搭建网站，把实践过程整理成文章。' },
+  { id: 'projects', title: '项目', content: '整理这个博客，让每一篇笔记都有自己的位置。' }
+]
 ---
 
-<IndexLayout title={pageTitle} description={pageDescription}>
-  <div class="now-page">
-    <h1>Now</h1>
-    <p class="lede">
-      This is a <a href="https://nownownow.com/about" target="_blank" rel="noopener noreferrer"
-        >now</a
-      > page — a snapshot of what I'm currently focused on.
-    </p>
-
-    <section class="now-section">
-      <h2>Life</h2>
-      <p>Your City, Your Country</p>
-    </section>
-
-    <section class="now-section">
-      <h2>Work</h2>
-      <p>
-        Currently working at <a href="https://example.com/" target="_blank" rel="noopener noreferrer"
-          >Acme Inc.</a
-        >
-      </p>
-    </section>
-
-    <section class="now-section">
-      <h2>Learning</h2>
-      <ul class="learning-list">
-        <li>
-          <a
-            href="https://docs.astro.build/en/tutorial/0-introduction/"
-            target="_blank"
-            rel="noopener noreferrer">Astro</a
-          >
-        </li>
-        <li>TypeScript</li>
-        <li>A new language</li>
-      </ul>
-    </section>
-
-    <section class="now-section">
-      <h2>Play</h2>
-      <div class="game-badges">
-        <a
-          href="https://store.steampowered.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="game-badge"
-        >
-          <img
-            alt="Steam"
-            src="https://img.shields.io/badge/Steam-171a21?style=flat-square&logo=steam&logoColor=white"
-          />
-        </a>
-        <a
-          href="https://open.spotify.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="game-badge"
-        >
-          <img
-            alt="Spotify"
-            src="https://img.shields.io/badge/Spotify-1DB954?style=flat-square&logo=spotify&logoColor=white"
-          />
-        </a>
-      </div>
-    </section>
+<IndexLayout
+  title="近况"
+  description="最近在做的事情与关注的方向"
+  seoTitle={`近况 · ${themeConfig.site.title}`}
+>
+  <div class="now-page minimal-page">
+    <MinimalPageHeader meta="NOW" title="此刻" suffix="近况" metaLabel="最近的生活与学习" />
+    {
+      sections.map((section, index) => (
+        <section id={section.id} class="minimal-index-row" aria-labelledby={`${section.id}-title`}>
+          <span class="minimal-index-marker" aria-hidden="true">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <div class="minimal-index-content glass-card">
+            <header class="minimal-section-head">
+              <h2 id={`${section.id}-title`}>{section.title}</h2>
+            </header>
+            <p>{section.content}</p>
+          </div>
+        </section>
+      ))
+    }
   </div>
+  <RailLinks
+    slot="rail"
+    title="最近在做"
+    links={sections.map(({ id, title }) => ({ href: `#${id}`, label: title }))}
+  />
 </IndexLayout>
 
 <style>
-  .now-page {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  section {
+    margin-bottom: 1.25rem;
+    scroll-margin-top: 5rem;
   }
-
-  .now-page h1 {
+  p {
     margin: 0;
-    font-size: 1.75rem;
-    font-weight: 600;
-  }
-
-  .lede {
-    margin: 0 0 1rem 0;
     color: var(--text-secondary);
-    font-size: 0.95rem;
-  }
-
-  .lede a {
-    color: var(--text-primary);
-    text-decoration: none;
-    padding: 0 0.12em;
-    transition: background-color 0.15s ease-out;
-  }
-
-  .lede a:hover {
-    background-color: var(--selection);
-  }
-
-  .now-section {
-    padding: 1rem 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .now-section h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  .now-section p {
-    margin: 0;
-    line-height: 1.6;
-  }
-
-  .now-section a {
-    color: var(--text-primary);
-    text-decoration: none;
-    padding: 0 0.12em;
-    transition: background-color 0.15s ease-out;
-  }
-
-  .now-section a:hover {
-    background-color: var(--selection);
-  }
-
-  .learning-list {
-    margin: 0;
-    padding-left: 1.25rem;
     line-height: 1.8;
-  }
-
-  .game-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .game-badge {
-    border: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .game-badge:hover {
-    opacity: 0.7;
-  }
-
-  .game-badge img {
-    display: block;
-    height: 22px;
   }
 </style>

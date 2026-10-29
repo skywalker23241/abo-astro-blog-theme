@@ -1,5 +1,36 @@
-<div id="image-viewer" class="image-viewer" aria-hidden="true">
-  <img id="image-viewer-img" src="" alt="" />
+---
+import { themeConfig } from '@/config'
+import ArrowCounterClockwise from 'phosphor-astro/ArrowCounterClockwise.astro'
+import MagnifyingGlassMinus from 'phosphor-astro/MagnifyingGlassMinus.astro'
+import MagnifyingGlassPlus from 'phosphor-astro/MagnifyingGlassPlus.astro'
+import X from 'phosphor-astro/X.astro'
+
+const { maxScale, doubleTapScale } = themeConfig.post.imageViewer
+---
+
+<div
+  id="image-viewer"
+  class="image-viewer"
+  aria-hidden="true"
+  data-max-scale={maxScale}
+  data-double-tap-scale={doubleTapScale}
+>
+  <img id="image-viewer-img" src="" alt="" draggable="false" />
+  <div class="viewer-toolbar" role="group" aria-label="图片查看工具栏">
+    <button type="button" class="viewer-btn" data-viewer-action="zoom-out" aria-label="缩小">
+      <MagnifyingGlassMinus width="1.125rem" height="1.125rem" />
+    </button>
+    <span class="viewer-scale">100%</span>
+    <button type="button" class="viewer-btn" data-viewer-action="zoom-in" aria-label="放大">
+      <MagnifyingGlassPlus width="1.125rem" height="1.125rem" />
+    </button>
+    <button type="button" class="viewer-btn" data-viewer-action="reset" aria-label="重置缩放">
+      <ArrowCounterClockwise width="1.125rem" height="1.125rem" />
+    </button>
+    <button type="button" class="viewer-btn" data-viewer-action="close" aria-label="关闭预览">
+      <X width="1.125rem" height="1.125rem" />
+    </button>
+  </div>
 </div>
 
 <script is:inline>
@@ -13,15 +44,139 @@
     let currentKeydownHandler = null
     let currentProseObserver = null
     let imageViewerInitPending = false
+    let currentController = null
 
-    function initImageViewer() {
-      const viewer = document.getElementById('image-viewer')
-      const viewerImg = document.getElementById('image-viewer-img')
+    // One controller per viewer element: all mutable zoom/gesture state lives in
+    // this closure so re-inits (view transitions) can't fork it into stale copies.
+    function createViewerController(viewer, viewerImg) {
+      const scaleLabel = viewer.querySelector('.viewer-scale')
+      const toolbar = viewer.querySelector('.viewer-toolbar')
 
-      if (!viewer || !viewerImg || viewerImg.tagName !== 'IMG') return
+      const parsedMax = parseFloat(viewer.dataset.maxScale)
+      const maxScale = Number.isFinite(parsedMax) && parsedMax > 1 ? parsedMax : 4
+      const parsedDoubleTap = parseFloat(viewer.dataset.doubleTapScale)
+      const doubleTapScale = Math.min(
+        Number.isFinite(parsedDoubleTap) && parsedDoubleTap > 1 ? parsedDoubleTap : 2,
+        maxScale
+      )
 
-      function showImage(src, alt) {
-        if (viewerImg && src) {
+      const MIN_SCALE = 1
+      const EPS = 0.01
+      const TAP_SLOP = 8
+      const DOUBLE_TAP_MS = 300
+      const DOUBLE_TAP_RADIUS = 30
+      const CLOSE_DELAY = 280
+      const BTN_STEP = 1.5
+      const WHEEL_K = 0.002
+      const ANIM_MS = 200
+
+      let scale = 1
+      let tx = 0
+      let ty = 0
+      let contentW = 0
+      let contentH = 0
+      const pointers = new Map()
+      let gesture = 'idle' // 'idle' | 'tap' | 'pan' | 'pinch'
+      let downInfo = null
+      let panLast = null
+      let pinchBase = null
+      let lastTap = null
+      let closeTimer = 0
+      let animTimer = 0
+
+      function clampValue(value, min, max) {
+        return Math.min(Math.max(value, min), max)
+      }
+
+      // Visible content rect at scale 1: object-fit contain letterboxes the
+      // element box (min-width upscaling), so pan clamping must use this, not
+      // the box itself.
+      function refreshMetrics() {
+        const boxW = viewerImg.offsetWidth
+        const boxH = viewerImg.offsetHeight
+        const natW = viewerImg.naturalWidth
+        const natH = viewerImg.naturalHeight
+        if (natW > 0 && natH > 0 && boxW > 0 && boxH > 0) {
+          const k = Math.min(boxW / natW, boxH / natH)
+          contentW = natW * k
+          contentH = natH * k
+        } else {
+          contentW = boxW
+          contentH = boxH
+        }
+      }
+
+      function clampTranslation() {
+        const maxTx = Math.max(0, (contentW * scale - window.innerWidth) / 2)
+        const maxTy = Math.max(0, (contentH * scale - window.innerHeight) / 2)
+        tx = clampValue(tx, -maxTx, maxTx)
+        ty = clampValue(ty, -maxTy, maxTy)
+      }
+
+      function applyTransform(animated) {
+        clearTimeout(animTimer)
+        if (animated) {
+          viewerImg.classList.add('zoom-transition')
+          // Timer instead of transitionend: the transform may not change at all.
+          animTimer = setTimeout(function () {
+            viewerImg.classList.remove('zoom-transition')
+          }, ANIM_MS + 50)
+        } else {
+          viewerImg.classList.remove('zoom-transition')
+        }
+        viewerImg.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')'
+        viewer.classList.toggle('is-zoomed', scale > MIN_SCALE + EPS)
+        if (scaleLabel) {
+          scaleLabel.textContent = Math.round(scale * 100) + '%'
+        }
+      }
+
+      // Zoom keeping the content point under (px, py) fixed on screen.
+      // With transform-origin at the viewport center: t' = p - (s'/s)(p - t).
+      function zoomTo(next, px, py, animated) {
+        const s2 = clampValue(next, MIN_SCALE, maxScale)
+        const pcx = px - window.innerWidth / 2
+        const pcy = py - window.innerHeight / 2
+        tx = pcx - (s2 / scale) * (pcx - tx)
+        ty = pcy - (s2 / scale) * (pcy - ty)
+        scale = s2
+        clampTranslation()
+        applyTransform(animated)
+      }
+
+      function zoomBy(factor, px, py, animated) {
+        zoomTo(scale * factor, px, py, animated)
+      }
+
+      function resetTransform(animated) {
+        scale = 1
+        tx = 0
+        ty = 0
+        applyTransform(animated)
+      }
+
+      function cancelCloseTimer() {
+        if (closeTimer) {
+          clearTimeout(closeTimer)
+          closeTimer = 0
+        }
+      }
+
+      function endGesture() {
+        pointers.clear()
+        gesture = 'idle'
+        downInfo = null
+        panLast = null
+        pinchBase = null
+        viewer.classList.remove('is-gesturing')
+      }
+
+      function show(src, alt) {
+        cancelCloseTimer()
+        endGesture()
+        lastTap = null
+        resetTransform(false)
+        if (src) {
           viewerImg.src = src
           viewerImg.alt = alt || ''
         }
@@ -37,9 +192,12 @@
         setTimeout(function () {
           viewer.style.cursor = ''
         }, 10)
+        refreshMetrics()
       }
 
-      function hideImage() {
+      function hide() {
+        cancelCloseTimer()
+        endGesture()
         viewer.classList.remove('active')
         viewer.style.pointerEvents = 'none'
         viewer.setAttribute('aria-hidden', 'true')
@@ -47,35 +205,272 @@
         document.body.style.overflow = ''
       }
 
+      function handleResize() {
+        if (!viewer.classList.contains('active')) return
+        refreshMetrics()
+        clampTranslation()
+        applyTransform(false)
+      }
+
+      function getGesturePoints() {
+        const pts = []
+        for (const p of pointers.values()) {
+          pts.push(p)
+          if (pts.length === 2) break
+        }
+        return pts
+      }
+
+      function startPinch() {
+        const pts = getGesturePoints()
+        if (pts.length < 2) return
+        gesture = 'pinch'
+        viewer.classList.add('is-gesturing')
+        pinchBase = {
+          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+          midX: (pts[0].x + pts[1].x) / 2,
+          midY: (pts[0].y + pts[1].y) / 2,
+          scale: scale,
+          tx: tx,
+          ty: ty
+        }
+      }
+
+      // Anchor the pinch midpoint and follow its movement in one formula:
+      // t' = mid_now - (s'/s_base)(mid_base - t_base), relative to viewport center.
+      function movePinch() {
+        const pts = getGesturePoints()
+        if (pts.length < 2 || !pinchBase) return
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1
+        const s2 = clampValue((pinchBase.scale * dist) / pinchBase.dist, MIN_SCALE, maxScale)
+        const cx = window.innerWidth / 2
+        const cy = window.innerHeight / 2
+        const nmx = (pts[0].x + pts[1].x) / 2 - cx
+        const nmy = (pts[0].y + pts[1].y) / 2 - cy
+        tx = nmx - (s2 / pinchBase.scale) * (pinchBase.midX - cx - pinchBase.tx)
+        ty = nmy - (s2 / pinchBase.scale) * (pinchBase.midY - cy - pinchBase.ty)
+        scale = s2
+        clampTranslation()
+        applyTransform(false)
+      }
+
+      function classifyTap(e) {
+        const now = Date.now()
+        const x = e.clientX
+        const y = e.clientY
+        const onImage = Boolean(downInfo && downInfo.onImage)
+
+        if (
+          lastTap &&
+          now - lastTap.time <= DOUBLE_TAP_MS &&
+          Math.hypot(x - lastTap.x, y - lastTap.y) <= DOUBLE_TAP_RADIUS
+        ) {
+          lastTap = null
+          if (scale > MIN_SCALE + EPS) {
+            resetTransform(true)
+          } else {
+            zoomTo(doubleTapScale, x, y, true)
+          }
+          return
+        }
+
+        lastTap = { x: x, y: y, time: now }
+        if (!onImage) {
+          hide()
+        } else if (scale <= MIN_SCALE + EPS) {
+          // Deferred so a quick second tap upgrades to double-tap zoom.
+          closeTimer = setTimeout(hide, CLOSE_DELAY)
+        }
+        // On the image while zoomed: a single tap is a no-op.
+      }
+
+      function onPointerDown(e) {
+        if (!viewer.classList.contains('active')) return
+        if (e.target.closest && e.target.closest('.viewer-toolbar')) return
+        cancelCloseTimer()
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        // Capture on the viewer (not the img): overrides iOS implicit capture
+        // and keeps mouse drags alive outside the window. After this, e.target
+        // of move/up is the viewer, so tap targets are recorded here.
+        try {
+          viewer.setPointerCapture(e.pointerId)
+        } catch {
+          /* pointer already released */
+        }
+        if (pointers.size === 1) {
+          gesture = 'tap'
+          downInfo = {
+            x: e.clientX,
+            y: e.clientY,
+            time: Date.now(),
+            onImage: e.target === viewerImg
+          }
+        } else if (pointers.size === 2) {
+          startPinch()
+        }
+        // 3rd+ pointers are tracked but ignored.
+      }
+
+      function onPointerMove(e) {
+        if (!pointers.has(e.pointerId)) return
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+        if (gesture === 'tap' && downInfo) {
+          if (Math.hypot(e.clientX - downInfo.x, e.clientY - downInfo.y) > TAP_SLOP) {
+            gesture = 'pan'
+            panLast = { x: e.clientX, y: e.clientY }
+            viewer.classList.add('is-gesturing')
+          }
+          return
+        }
+
+        if (gesture === 'pan' && panLast) {
+          tx += e.clientX - panLast.x
+          ty += e.clientY - panLast.y
+          panLast = { x: e.clientX, y: e.clientY }
+          clampTranslation()
+          applyTransform(false)
+          return
+        }
+
+        if (gesture === 'pinch') {
+          movePinch()
+        }
+      }
+
+      function onPointerUpOrCancel(e) {
+        if (!pointers.has(e.pointerId)) return
+        const wasTap = gesture === 'tap'
+        pointers.delete(e.pointerId)
+
+        if (wasTap) {
+          // pointercancel (system gesture stole the pointer) carries no tap semantics.
+          if (e.type === 'pointerup') {
+            classifyTap(e)
+          }
+          endGesture()
+          return
+        }
+
+        if (pointers.size >= 2) {
+          if (gesture === 'pinch') startPinch() // re-baseline to remaining fingers
+          return
+        }
+
+        if (pointers.size === 1) {
+          // Pinch downgrades to a single-finger pan; never a tap.
+          gesture = 'pan'
+          const survivor = pointers.values().next().value
+          panLast = { x: survivor.x, y: survivor.y }
+          pinchBase = null
+          viewer.classList.add('is-gesturing')
+          return
+        }
+
+        endGesture()
+      }
+
+      function onWheel(e) {
+        if (!viewer.classList.contains('active')) return
+        // Also swallows ctrl+wheel (trackpad pinch) before the browser zooms the page.
+        e.preventDefault()
+        cancelCloseTimer()
+        let delta = e.deltaY
+        if (e.deltaMode === 1) delta *= 18
+        else if (e.deltaMode === 2) delta *= 120
+        const factor = clampValue(Math.exp(-delta * WHEEL_K), 0.5, 2)
+        zoomBy(factor, e.clientX, e.clientY, false)
+      }
+
+      function onToolbarClick(e) {
+        const btn = e.target.closest('[data-viewer-action]')
+        if (!btn) return
+        cancelCloseTimer()
+        const action = btn.dataset.viewerAction
+        const cx = window.innerWidth / 2
+        const cy = window.innerHeight / 2
+        if (action === 'zoom-in') {
+          zoomBy(BTN_STEP, cx, cy, true)
+        } else if (action === 'zoom-out') {
+          zoomBy(1 / BTN_STEP, cx, cy, true)
+        } else if (action === 'reset') {
+          resetTransform(true)
+        } else if (action === 'close') {
+          hide()
+        }
+      }
+
+      viewer.addEventListener('transitionend', function (e) {
+        if (e.propertyName === 'opacity' && !viewer.classList.contains('active')) {
+          viewer.style.visibility = 'hidden'
+          viewerImg.src = ''
+          viewerImg.alt = ''
+          resetTransform(false)
+          lastTap = null
+          endGesture()
+          viewer.style.cursor = 'auto'
+          setTimeout(function () {
+            viewer.style.cursor = ''
+          }, 10)
+        }
+      })
+
+      viewer.addEventListener('pointerdown', onPointerDown)
+      viewer.addEventListener('pointermove', onPointerMove)
+      viewer.addEventListener('pointerup', onPointerUpOrCancel)
+      viewer.addEventListener('pointercancel', onPointerUpOrCancel)
+      viewer.addEventListener('wheel', onWheel, { passive: false })
+
+      // Kept from the original viewer: iOS Safari doesn't fully honor
+      // touch-action: none for page-level pinch/scroll, this is the reliable block.
+      viewer.addEventListener(
+        'touchmove',
+        function (e) {
+          if (viewer.classList.contains('active')) {
+            e.preventDefault()
+          }
+        },
+        { passive: false }
+      )
+
+      viewer.addEventListener('dragstart', function (e) {
+        e.preventDefault()
+      })
+
+      viewerImg.addEventListener('load', function () {
+        refreshMetrics()
+        clampTranslation()
+        applyTransform(false)
+      })
+
+      if (toolbar) {
+        toolbar.addEventListener('click', onToolbarClick)
+      }
+
+      return { show: show, hide: hide, handleResize: handleResize }
+    }
+
+    function initImageViewer() {
+      const viewer = document.getElementById('image-viewer')
+      const viewerImg = document.getElementById('image-viewer-img')
+
+      if (!viewer || !viewerImg || viewerImg.tagName !== 'IMG') return
+
       if (viewer.dataset.imageViewerInit !== '1') {
         viewer.dataset.imageViewerInit = '1'
-
-        viewer.addEventListener('transitionend', function (e) {
-          if (e.propertyName === 'opacity' && !viewer.classList.contains('active')) {
-            viewer.style.visibility = 'hidden'
-            if (viewerImg) {
-              viewerImg.src = ''
-              viewerImg.alt = ''
-            }
-            viewer.style.cursor = 'auto'
-            setTimeout(function () {
-              viewer.style.cursor = ''
-            }, 10)
-          }
-        })
-
-        viewer.addEventListener('click', hideImage)
-
-        viewer.addEventListener(
-          'touchmove',
-          function (e) {
-            if (viewer.classList.contains('active')) {
-              e.preventDefault()
-            }
-          },
-          { passive: false }
-        )
+        currentController = createViewerController(viewer, viewerImg)
       }
+
+      // Clean up previous keydown handler to avoid stacking
+      if (currentKeydownHandler) {
+        document.removeEventListener('keydown', currentKeydownHandler)
+      }
+      currentKeydownHandler = function (e) {
+        if (e.key === 'Escape' && viewer.classList.contains('active')) {
+          currentController?.hide()
+        }
+      }
+      document.addEventListener('keydown', currentKeydownHandler)
 
       function bindImageClickEvents() {
         const previewImages = document.querySelectorAll('img[data-preview="true"]')
@@ -85,21 +480,10 @@
           img.style.cursor = 'zoom-in'
           img.addEventListener('click', function (e) {
             e.preventDefault()
-            showImage(e.target.src, e.target.alt || '')
+            currentController?.show(e.target.currentSrc || e.target.src, e.target.alt || '')
           })
         })
       }
-
-      // Clean up previous keydown handler to avoid stacking
-      if (currentKeydownHandler) {
-        document.removeEventListener('keydown', currentKeydownHandler)
-      }
-      currentKeydownHandler = function (e) {
-        if (e.key === 'Escape' && viewer.classList.contains('active')) {
-          hideImage()
-        }
-      }
-      document.addEventListener('keydown', currentKeydownHandler)
 
       bindImageClickEvents()
 
@@ -132,6 +516,9 @@
 
     window.__initImageViewer = scheduleImageViewerInit
     scheduleImageViewerInit()
+    window.addEventListener('resize', function () {
+      currentController?.handleResize()
+    })
     document.addEventListener('astro:after-swap', scheduleImageViewerInit)
     document.addEventListener('astro:page-load', scheduleImageViewerInit)
   })()
@@ -154,6 +541,9 @@
     cursor: zoom-out;
     pointer-events: none;
     visibility: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .image-viewer.active {
@@ -168,11 +558,79 @@
     max-height: 80vh;
     object-fit: contain;
     cursor: zoom-out;
+    transform-origin: center center;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+
+  .image-viewer.active img {
+    will-change: transform;
+  }
+
+  .image-viewer img.zoom-transition {
+    transition: transform 0.2s ease-out;
+  }
+
+  .image-viewer.is-zoomed img {
+    cursor: grab;
+  }
+
+  .image-viewer.is-zoomed.is-gesturing img {
+    cursor: grabbing;
+  }
+
+  .viewer-toolbar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--text-secondary);
+    cursor: default;
+  }
+
+  .viewer-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    transition: color 0.15s ease-out;
+  }
+
+  .viewer-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .viewer-scale {
+    min-width: 3.2em;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
   }
 
   @media (max-width: 768px) {
     .image-viewer img {
       min-width: 100vw;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .image-viewer img.zoom-transition {
+      transition: none;
     }
   }
 

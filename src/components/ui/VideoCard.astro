@@ -1,0 +1,89 @@
+---
+import { getVideoReference, isExternalVideoSource, type VideoSource } from '@/lib/game-video'
+import PlayFill from 'phosphor-astro/PlayFill.astro'
+import Trash from 'phosphor-astro/Trash.astro'
+
+interface Props {
+  url?: string
+  source?: VideoSource
+  title?: string
+  description?: string
+  game?: string
+  date?: string
+  tags?: string[]
+  sizeBytes?: number
+  contentType?: string
+  captureNumber?: number
+  highlightId?: string
+}
+
+const { url: rawUrl, source = 'r2', title, game, date, highlightId = '' } = Astro.props
+
+const reference = getVideoReference(source, rawUrl || '')
+const videoUrl = reference?.url || ''
+const externalSource = isExternalVideoSource(source)
+const cardTitle = title?.trim() || '游戏精彩时刻'
+const formattedDate = date?.trim().replaceAll('-', '.')
+---
+
+<article
+  class="capture-card game-video-card"
+  data-game={game || undefined}
+  data-source={source}
+  data-highlight-id={highlightId}
+>
+  <button
+    class="capture-card-media"
+    type="button"
+    data-open-player
+    data-highlight-id={highlightId}
+    aria-label={`播放 ${cardTitle}`}
+  >
+    {
+      videoUrl && source === 'r2' ? (
+        <video
+          class="capture-preview-video"
+          data-src={videoUrl}
+          data-preview-video
+          data-highlight-id={highlightId}
+          preload="none"
+          muted
+          playsinline
+          tabindex="-1"
+          aria-hidden="true"
+        />
+      ) : (
+        <span class="capture-external-preview" aria-hidden="true">
+          <small>{externalSource ? '点击播放' : '视频暂不可用'}</small>
+        </span>
+      )
+    }
+    <span class="capture-card-shade" aria-hidden="true"></span>
+    <span class="capture-play-indicator" aria-hidden="true">
+      <PlayFill width="1.375rem" height="1.375rem" aria-hidden="true" />
+    </span>
+    <span class="capture-duration" data-video-duration>--:--</span>
+    {
+      formattedDate && (
+        <time class="capture-date" datetime={date}>
+          {formattedDate}
+        </time>
+      )
+    }
+    <span class="capture-playback-error" data-preview-error hidden>
+      <strong>预览暂不可用</strong>
+      <small>点击尝试播放</small>
+    </span>
+  </button>
+
+  {
+    externalSource && (
+      <div class="capture-admin-actions" data-admin-only hidden>
+        <button type="button" data-delete-highlight={highlightId}>
+          <Trash width="0.875rem" height="0.875rem" aria-hidden="true" />
+          删除
+        </button>
+      </div>
+    )
+  }
+</article>

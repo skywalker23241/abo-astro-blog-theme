@@ -20,18 +20,18 @@ const { type = 'note', title = '', collapsible = false, open = false } = Astro.p
 <details class={`callout ${type}`} {open} data-collapsible={collapsible}>
   <summary class="callout-header">
     <span class="callout-icon">
-      {type === 'note' && <Note width={20} height={20} />}
-      {type === 'info' && <Info width={20} height={20} />}
-      {type === 'tip' && <CheckCircle width={20} height={20} />}
-      {type === 'warning' && <Warning width={20} height={20} />}
-      {type === 'danger' && <Fire width={20} height={20} />}
-      {type === 'quote' && <Quotes width={20} height={20} />}
+      {type === 'note' && <Note width="1.25rem" height="1.25rem" />}
+      {type === 'info' && <Info width="1.25rem" height="1.25rem" />}
+      {type === 'tip' && <CheckCircle width="1.25rem" height="1.25rem" />}
+      {type === 'warning' && <Warning width="1.25rem" height="1.25rem" />}
+      {type === 'danger' && <Fire width="1.25rem" height="1.25rem" />}
+      {type === 'quote' && <Quotes width="1.25rem" height="1.25rem" />}
     </span>
     <span class="callout-title">{title || type.toUpperCase()}</span>
     {
       collapsible && (
         <span class="callout-toggle">
-          <CaretDown width={20} height={20} />
+          <CaretDown width="1.25rem" height="1.25rem" />
         </span>
       )
     }

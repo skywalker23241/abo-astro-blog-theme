@@ -1,21 +1,28 @@
-<script is:inline>
+---
+import { integrationConfig } from '@/config'
+const config = integrationConfig.giscus
+---
+
+<script is:inline define:vars={{ giscusConfig: config }}>
   ;(function () {
+    if (
+      !giscusConfig.enabled ||
+      !giscusConfig.repo ||
+      !giscusConfig.repoId ||
+      !giscusConfig.categoryId
+    )
+      return
     if (window.__giscusLoaderInitialized) {
       window.__scheduleGiscus?.()
       return
     }
     window.__giscusLoaderInitialized = true
 
-    // Comments are powered by giscus (https://giscus.app).
-    // 1. Enable Discussions on your GitHub repository.
-    // 2. Install the giscus app and configure it at https://giscus.app.
-    // 3. Fill in the four values below with the ones giscus generates for you.
-    // Comments stay disabled (nothing is rendered) until 'data-repo' is set.
     const GISCUS_ATTRS = {
-      'data-repo': '', // e.g. 'your-username/your-repo'
-      'data-repo-id': '',
-      'data-category': 'General',
-      'data-category-id': '',
+      'data-repo': giscusConfig.repo,
+      'data-repo-id': giscusConfig.repoId,
+      'data-category': giscusConfig.category,
+      'data-category-id': giscusConfig.categoryId,
       'data-mapping': 'pathname',
       'data-strict': '0',
       'data-reactions-enabled': '1',
@@ -36,6 +43,12 @@
       Object.entries(GISCUS_ATTRS).forEach(function (entry) {
         script.setAttribute(entry[0], entry[1])
       })
+      if (container.dataset.giscusTheme === 'auto') {
+        script.dataset.theme = document.documentElement.classList.contains('dark')
+          ? 'transparent_dark'
+          : 'light'
+      }
+      if (container.dataset.giscusLang) script.dataset.lang = container.dataset.giscusLang
 
       container.dataset.giscusHydrated = 'true'
       container.innerHTML = ''
@@ -46,8 +59,6 @@
     let giscusSchedulePending = false
 
     function hydrate() {
-      if (!GISCUS_ATTRS['data-repo']) return
-
       const container = document.getElementById('giscus-container')
       if (!container || !container.isConnected) return
       if (container.dataset.giscusHydrated === 'true') return
@@ -85,6 +96,27 @@
     }
 
     window.__scheduleGiscus = schedule
+    const themeObserver = new MutationObserver(function () {
+      const frame = document.querySelector(
+        '#giscus-container[data-giscus-theme="auto"] iframe.giscus-frame'
+      )
+      frame?.contentWindow?.postMessage(
+        {
+          giscus: {
+            setConfig: {
+              theme: document.documentElement.classList.contains('dark')
+                ? 'transparent_dark'
+                : 'light'
+            }
+          }
+        },
+        'https://giscus.app'
+      )
+    })
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
     schedule()
     document.addEventListener('astro:after-swap', schedule)
     document.addEventListener('astro:page-load', schedule)

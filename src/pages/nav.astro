@@ -1,10 +1,18 @@
 ---
+import { themeConfig } from '@/config'
 import IndexLayout from '@/layouts/IndexLayout.astro'
-import linkData from '../data/links.json'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
 import MagnifyingGlass from 'phosphor-astro/MagnifyingGlass.astro'
+import ArrowUpRight from 'phosphor-astro/ArrowUpRight.astro'
+import X from 'phosphor-astro/X.astro'
+import GlobeSimple from 'phosphor-astro/GlobeSimple.astro'
+import linkData from '@/data/links.json'
+import bookmarkIcons from '@/data/bookmark-icons.json'
 
-const pageTitle = 'Bookmarks'
-const pageDescription = 'A collection of frequently used sites'
+const icons: Record<string, string> = bookmarkIcons
+
+const pageTitle = '书签'
+const pageDescription = '一些常用的站点收集'
 
 interface LinkItem {
   name: string
@@ -16,56 +24,149 @@ interface Category {
   items: LinkItem[]
 }
 
-const getFavicon = (url: string) => {
-  try {
-    const domain = new URL(url).hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-  } catch {
-    return ''
-  }
-}
+const totalBookmarks = linkData.reduce((total, group) => total + group.items.length, 0)
+const indexedLinkGroups = linkData.map((group, index) => ({
+  ...group,
+  id: `bookmark-group-${String(index + 1).padStart(2, '0')}`
+}))
 ---
 
-<IndexLayout title={pageTitle} description={pageDescription}>
-  <div class="nav-page">
-    <div class="search-row">
-      <form action="https://www.google.com/search" target="_blank">
-        <MagnifyingGlass width={14} height={14} class="icon" />
-        <input type="text" name="q" placeholder="Google" autocomplete="off" />
-      </form>
-      <form action="https://www.baidu.com/s" target="_blank">
-        <MagnifyingGlass width={14} height={14} class="icon" />
-        <input type="text" name="wd" placeholder="Baidu" autocomplete="off" />
-      </form>
-    </div>
+<IndexLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`书签 · ${themeConfig.site.title}`}
+  noindex
+>
+  <div class="nav-page minimal-page">
+    <MinimalPageHeader
+      meta={`${String(linkData.length).padStart(2, '0')} / ${totalBookmarks}`}
+      title="书签"
+      suffix="导航"
+      metaLabel={`${linkData.length} 组书签，共 ${totalBookmarks} 个链接`}
+    />
 
-    <div class="bookmark-search">
-      <MagnifyingGlass width={14} height={14} class="icon" />
-      <input type="text" id="nav-search" placeholder="Search bookmarks..." autocomplete="off" />
+    <div class="bookmark-tools" aria-label="书签工具">
+      <div class="bookmark-search">
+        <MagnifyingGlass width="1.125rem" height="1.125rem" aria-hidden="true" />
+        <label class="sr-only" for="nav-search">搜索书签</label>
+        <input
+          id="nav-search"
+          type="search"
+          placeholder="搜索书签…"
+          autocomplete="off"
+          data-nav-search
+        />
+      </div>
+      <button type="button" data-search-engine="google" aria-haspopup="dialog">Google</button>
+      <button type="button" data-search-engine="baidu" aria-haspopup="dialog">百度</button>
     </div>
 
     {
-      linkData.map((group: Category) => (
-        <section class="nav-section">
-          <h2>{group.category}</h2>
-          <div class="grid">
-            {group.items.map((item) => (
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={item.name}
-                class="nav-item"
-              >
-                <img src={getFavicon(item.url)} alt="" loading="lazy" />
-                <span>{item.name}</span>
-              </a>
-            ))}
+      indexedLinkGroups.map((group: Category & { id: string }, groupIndex) => (
+        <section id={group.id} class="nav-section minimal-index-row">
+          <span class="minimal-index-marker" aria-hidden="true">
+            {String(groupIndex + 1).padStart(2, '0')}
+          </span>
+          <div class="nav-section-content minimal-index-content glass-card">
+            <header class="minimal-section-head">
+              <h2>{group.category}</h2>
+              <span class="minimal-section-count" aria-label={`${group.items.length} 个链接`}>
+                {String(group.items.length).padStart(2, '0')}
+              </span>
+            </header>
+            <ul class="nav-list minimal-rule-list">
+              {group.items.map((item) => (
+                <li>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={item.name}
+                    class="nav-item"
+                  >
+                    <span class="nav-icon" aria-hidden="true">
+                      <GlobeSimple width="1.25rem" height="1.25rem" aria-hidden="true" />
+                      {icons[new URL(item.url).hostname] && (
+                        <img
+                          class="nav-favicon"
+                          src={icons[new URL(item.url).hostname]}
+                          width="20"
+                          height="20"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          referrerpolicy="no-referrer"
+                        />
+                      )}
+                    </span>
+                    <span class="nav-label">{item.name}</span>
+                    <span class="nav-arrow" aria-hidden="true">
+                      <ArrowUpRight width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       ))
     }
   </div>
+
+  <div class="section-rail bookmark-rail" slot="rail">
+    <nav class="bookmark-directory" aria-labelledby="bookmark-directory-heading">
+      <p class="bookmark-directory-label">书签分组</p>
+      <h2 id="bookmark-directory-heading" class="sr-only">书签分组目录</h2>
+      <ol>
+        {
+          indexedLinkGroups.map((group) => (
+            <li>
+              <a
+                href={`#${group.id}`}
+                aria-label={`${group.category}，${group.items.length} 个链接`}
+              >
+                <span>{group.category}</span>
+                <span class="bookmark-directory-count">
+                  {String(group.items.length).padStart(2, '0')}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+  </div>
+  <dialog id="bookmark-web-search" aria-labelledby="bookmark-web-search-title">
+    <div class="web-search-card">
+      <header class="web-search-head">
+        <h2 id="bookmark-web-search-title">Google 搜索</h2>
+        <button type="button" data-close-web-search aria-label="关闭搜索">
+          <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+        </button>
+      </header>
+      <form action="https://www.google.com/search" method="get" target="_blank">
+        <label class="sr-only" for="web-search-query">搜索关键词</label>
+        <input
+          id="web-search-query"
+          type="search"
+          name="q"
+          placeholder="输入搜索关键词…"
+          required
+          autocomplete="off"
+        />
+        <footer>
+          <button type="button" data-close-web-search>取消</button>
+          <button type="submit" class="web-search-submit">
+            <MagnifyingGlass width="1rem" height="1rem" aria-hidden="true" />
+            搜索
+          </button>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+  <script>
+    import '@/scripts/bookmark-web-search'
+  </script>
 </IndexLayout>
 
 <script is:inline>
@@ -75,34 +176,59 @@ const getFavicon = (url: string) => {
     })
 
     function initNavSearch() {
-      const searchInput = document.getElementById('nav-search')
-      if (!searchInput || searchInput.dataset.navSearchInit === '1') return
-      searchInput.dataset.navSearchInit = '1'
+      document.querySelectorAll('.nav-favicon').forEach((image) => {
+        if (image.dataset.faviconInit === '1') return
+        image.dataset.faviconInit = '1'
+        const showIcon = () => {
+          if (image.naturalWidth > 0) image.parentElement.dataset.loaded = 'true'
+        }
+        image.addEventListener('load', showIcon, { once: true })
+        image.addEventListener(
+          'error',
+          () => {
+            image.hidden = true
+          },
+          { once: true }
+        )
+        if (image.complete) {
+          if (image.naturalWidth > 0) showIcon()
+          else image.hidden = true
+        }
+      })
 
       const sections = document.querySelectorAll('.nav-section')
+      const searchInputs = document.querySelectorAll('[data-nav-search]')
 
-      searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim()
+      searchInputs.forEach((searchInput) => {
+        if (searchInput.dataset.navSearchInit === '1') return
+        searchInput.dataset.navSearchInit = '1'
 
-        sections.forEach((section) => {
-          const items = section.querySelectorAll('.nav-item')
-          let hasVisibleItem = false
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase().trim()
 
-          items.forEach((item) => {
-            const name = item.querySelector('span').textContent.toLowerCase()
-            const url = item.getAttribute('href').toLowerCase()
-            const isMatch = name.includes(query) || url.includes(query)
-
-            item.style.display = isMatch ? 'flex' : 'none'
-            if (isMatch) hasVisibleItem = true
+          searchInputs.forEach((input) => {
+            if (input !== e.target) input.value = e.target.value
           })
 
-          section.style.display = hasVisibleItem ? 'block' : 'none'
+          sections.forEach((section) => {
+            const items = section.querySelectorAll('.nav-item')
+            let hasVisibleItem = false
+
+            items.forEach((item) => {
+              const name = item.querySelector('.nav-label').textContent.toLowerCase()
+              const url = item.getAttribute('href').toLowerCase()
+              const isMatch = name.includes(query) || url.includes(query)
+
+              item.closest('li').hidden = !isMatch
+              if (isMatch) hasVisibleItem = true
+            })
+
+            section.style.display = hasVisibleItem ? '' : 'none'
+          })
         })
       })
     }
 
-    // Initialize on load and after view transitions
     window.__initNavSearch = initNavSearch
     initNavSearch()
 
@@ -115,124 +241,324 @@ const getFavicon = (url: string) => {
 
 <style>
   .nav-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1.75rem;
+    display: block;
   }
 
-  .search-row {
-    display: flex;
-    gap: 0.5rem;
+  .bookmark-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.75rem;
+    width: 100%;
+    margin-bottom: 1.5rem;
   }
 
-  .search-row form {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
+  .bookmark-search,
+  .bookmark-tools > button {
+    min-width: 0;
+    min-height: 3rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.9rem;
+    background: var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-secondary);
   }
 
   .bookmark-search {
-    position: relative;
     display: flex;
     align-items: center;
-    margin-top: -0.5rem;
+    gap: 0.65rem;
+    padding: 0 1rem;
   }
 
-  .bookmark-search input {
-    background: var(--code-bg);
-    border-color: transparent;
+  .bookmark-search :global(svg) {
+    flex-shrink: 0;
+  }
+  .bookmark-tools > button {
+    padding: 0.65rem 0.9rem;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
   }
 
-  .bookmark-search input:focus {
-    background: var(--bg);
-    border-color: var(--text-tertiary);
-  }
-
-  .icon {
-    position: absolute;
-    left: 0.65rem;
-    color: var(--text-tertiary);
-    pointer-events: none;
+  .bookmark-tools > button:hover {
+    background: color-mix(in srgb, var(--index-accent) 7%, var(--glass-surface-muted));
+    color: var(--text-primary);
   }
 
   input {
+    box-sizing: border-box;
     width: 100%;
-    padding: 0.5rem 0.65rem 0.5rem 1.9rem;
-    border-radius: 0.4rem;
-    border: 1px solid var(--border);
-    background: var(--bg);
+    min-width: 0;
+    padding: 0.75rem 0;
+    border: 0;
+    background: transparent;
     color: var(--text-primary);
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
+    font: inherit;
+    font-size: 0.8rem;
+    transition: box-shadow 0.16s ease-out;
   }
 
   input:focus {
     outline: none;
-    border-color: var(--text-secondary);
+    box-shadow: none;
+  }
+
+  .bookmark-search:focus-within {
+    border-color: var(--index-accent);
+    box-shadow:
+      var(--glass-control-highlight),
+      0 0 0 2px color-mix(in srgb, var(--index-accent) 16%, transparent);
   }
 
   input::placeholder {
     color: var(--text-tertiary);
   }
 
-  section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .nav-section {
+    margin-bottom: 1.25rem;
+    scroll-margin-top: 7rem;
   }
 
-  h2 {
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .grid {
+  .nav-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-left: 0;
+    gap: 0.6rem;
+  }
+
+  .nav-list > li:nth-child(odd) {
+    padding-right: 0;
+  }
+
+  .nav-list > li:nth-child(even) {
+    padding-left: 0;
   }
 
   .nav-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.5rem;
-    border-radius: 0.4rem;
-    text-decoration: none;
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 0.72rem;
+    border-radius: 0.75rem;
+    background: var(--glass-surface-muted);
     color: var(--text-primary);
-    transition: background-color 0.15s ease;
+    text-decoration: none;
+    transition: transform 0.16s ease-out;
   }
 
   .nav-item:hover {
-    background: var(--code-bg);
+    background: var(--glass-surface-strong);
   }
 
-  img {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
+  .nav-arrow {
     flex-shrink: 0;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.62rem;
   }
 
-  span {
-    font-size: 0.85rem;
-    white-space: nowrap;
+  .nav-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 1.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    color: var(--text-tertiary);
+  }
+
+  .nav-favicon {
+    position: absolute;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    padding: 1px;
+    border-radius: 4px;
+    background: #fff;
+    object-fit: contain;
+    opacity: 0;
+  }
+
+  .nav-icon[data-loaded='true'] .nav-favicon {
+    opacity: 1;
+  }
+
+  .nav-icon[data-loaded='true'] :global(svg) {
+    visibility: hidden;
+  }
+
+  .nav-label {
+    min-width: 0;
     overflow: hidden;
+    font-size: 0.88rem;
+    font-weight: 550;
+    white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  @media (max-width: 640px) {
-    .search-row {
-      flex-direction: column;
+  .nav-arrow {
+    margin-left: auto;
+  }
+
+  .bookmark-directory {
+    margin: 0;
+  }
+
+  .bookmark-directory-label {
+    margin: 0 0 0.75rem;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .bookmark-directory ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bookmark-directory li {
+    margin: 0;
+    border-bottom: 1px dashed var(--divider-color);
+  }
+
+  .bookmark-directory a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.55rem 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    text-decoration: none;
+    transition:
+      color 0.15s ease-out,
+      padding 0.15s ease-out;
+  }
+
+  .bookmark-directory a:hover,
+  .bookmark-directory a:focus-visible {
+    padding-left: 0.15rem;
+    color: var(--text-primary);
+  }
+
+  .bookmark-directory-count {
+    flex: 0 0 auto;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 520px) {
+    .nav-list {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .grid {
-      grid-template-columns: 1fr 1fr;
+    .nav-list > li:nth-child(odd),
+    .nav-list > li:nth-child(even) {
+      padding-right: 0;
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+
+  .bookmark-tools button:focus-visible,
+  #bookmark-web-search :is(button, input):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  #bookmark-web-search {
+    width: min(32rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 0;
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen-soft), transparent 44%), var(--glass-surface-strong);
+    box-shadow: var(--glass-highlight-muted), var(--glass-shadow-muted);
+    backdrop-filter: blur(20px) saturate(112%);
+    -webkit-backdrop-filter: blur(20px) saturate(112%);
+    color: var(--text-primary);
+  }
+
+  #bookmark-web-search::backdrop {
+    background: color-mix(in srgb, var(--bg) 45%, transparent);
+  }
+
+  .web-search-card {
+    padding: 1.5rem;
+  }
+  .web-search-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .web-search-head h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  #bookmark-web-search button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.85rem;
+    background: var(--glass-surface-muted);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  #bookmark-web-search .web-search-head button {
+    width: 2.5rem;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+  #web-search-query {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    background: var(--glass-surface-muted);
+  }
+  #bookmark-web-search footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+  }
+  #bookmark-web-search .web-search-submit {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--index-accent) 16%, var(--glass-surface-strong));
+  }
+  #bookmark-web-search button:hover {
+    color: var(--text-primary);
+    background: var(--glass-surface-strong);
+  }
+
+  @media (max-width: 520px) {
+    .bookmark-tools {
+      gap: 0.5rem;
+    }
+    .bookmark-tools > button {
+      padding-inline: 0.65rem;
+    }
+    .bookmark-search {
+      padding-inline: 0.75rem;
+      gap: 0.45rem;
     }
   }
 </style>

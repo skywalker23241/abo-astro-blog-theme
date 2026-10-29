@@ -12,10 +12,13 @@ const {
   ogImage,
   pageType = 'website',
   publishedTime,
-  modifiedTime
+  modifiedTime,
+  noindex = false
 } = Astro.props as BaseHeadProps
 
-const imageUrl = ogImage ? new URL(ogImage, Astro.url) : new URL('/og/chiri-og.png', Astro.url)
+const imageUrl = ogImage ? new URL(ogImage, Astro.url) : new URL('/og/site.png', Astro.url)
+// og:locale expects underscore form (zh_CN), JSON-LD inLanguage expects BCP-47 (zh-CN)
+const ogLocale = themeConfig.site.language
 const locale = themeConfig.site.language.replace('_', '-')
 const isArticle = pageType === 'article'
 const pageTitle = seoTitle || title
@@ -37,8 +40,12 @@ const jsonLd = isArticle
         url: themeConfig.site.website
       },
       publisher: {
-        '@type': 'Person',
-        name: themeConfig.site.author
+        '@type': 'Organization',
+        name: themeConfig.site.author,
+        logo: {
+          '@type': 'ImageObject',
+          url: new URL('/logo-light.png', Astro.site).toString()
+        }
       },
       datePublished: publishedTime ? publishedTime.toISOString() : undefined,
       dateModified: (modifiedTime ?? publishedTime)?.toISOString(),
@@ -73,7 +80,6 @@ const jsonLd = isArticle
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="preconnect" href="https://giscus.app" crossorigin="anonymous" />
 <link rel="dns-prefetch" href="https://giscus.app" />
-<link rel="preload" href="/fonts/Inter.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
   rel="alternate"
@@ -89,11 +95,19 @@ const jsonLd = isArticle
 <meta name="title" content={pageTitle} />
 <meta name="description" content={description} />
 <meta name="author" content={themeConfig.site.author} />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="googlebot" content="index, follow" />
+{
+  noindex ? (
+    <meta name="robots" content="noindex, follow" />
+  ) : (
+    <>
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+      <meta name="googlebot" content="index, follow" />
+    </>
+  )
+}
 
 <meta property="og:type" content={pageType} />
-<meta property="og:locale" content={locale} />
+<meta property="og:locale" content={ogLocale} />
 <meta property="og:site_name" content={themeConfig.site.title} />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={pageTitle} />
@@ -111,11 +125,11 @@ const jsonLd = isArticle
 }
 {isArticle && <meta property="article:author" content={themeConfig.site.author} />}
 
-<meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:url" content={Astro.url} />
-<meta property="twitter:title" content={pageTitle} />
-<meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={imageUrl} />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content={Astro.url} />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
 
 <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 

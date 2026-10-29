@@ -1,0 +1,89 @@
+---
+interface Props {
+  meta: string
+  title: string
+  suffix?: string
+  metaLabel?: string
+}
+
+const { title, suffix } = Astro.props
+const hasActions = Astro.slots.has('actions')
+---
+
+<header class:list={['minimal-page-header', { 'has-actions': hasActions }]}>
+  <div class="minimal-page-heading">
+    <h1>
+      {title}
+      {
+        suffix && (
+          <span class="minimal-page-suffix">
+            <i aria-hidden="true">/</i> {suffix}
+          </span>
+        )
+      }
+    </h1>
+  </div>
+  {
+    hasActions && (
+      <div class="minimal-page-actions">
+        <slot name="actions" />
+      </div>
+    )
+  }
+</header>
+
+<style>
+  .minimal-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: var(--index-width);
+    margin-inline: auto;
+    margin-bottom: 2.5rem;
+  }
+
+  .minimal-page-heading {
+    min-width: 0;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.35;
+  }
+
+  .minimal-page-suffix {
+    color: var(--text-secondary);
+    font-size: 0.84em;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  .minimal-page-suffix i {
+    color: var(--index-accent);
+    font-family: var(--mono);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .minimal-page-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 520px) {
+    .minimal-page-header {
+      margin-bottom: 2.2rem;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+    }
+  }
+</style>

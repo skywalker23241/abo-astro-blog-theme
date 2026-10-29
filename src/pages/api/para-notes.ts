@@ -1,10 +1,13 @@
 import type { APIRoute } from 'astro'
 import { getStore } from '@netlify/blobs'
+import { themeConfig } from '@/config'
+import { isParaCategory, normalizeParaCategory, type ParaCategory } from '@/data/para-categories'
 
 export const prerender = false
 
 const STORE_NAME = 'para-notes'
 const STORE_KEY = 'notes'
+const LOCAL_PREVIEW_KEY = 'preview-notes'
 const MAX_TITLE_LENGTH = 120
 const MAX_CONTENT_LENGTH = 4000
 const DEMO_NOTE_ID = 'demo-note'
@@ -13,6 +16,7 @@ type NoteRecord = {
   id: string
   title: string
   content: string
+  category: ParaCategory
   createdAt: string
   updatedAt: string
 }
@@ -20,6 +24,7 @@ type NoteRecord = {
 const DEMO_NOTE: NoteRecord = {
   id: DEMO_NOTE_ID,
   title: 'Demo memo',
+  category: 'resources',
   content:
     '这里可以放临时想法、文章草稿、待办事项，或者一句突然冒出来的话。点右上角的 Edit，输入管理员口令后就能新增、编辑和删除。',
   createdAt: '2026-06-03T00:00:00.000Z',
@@ -29,12 +34,14 @@ const DEMO_NOTE: NoteRecord = {
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json' }
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
   })
 }
 
 function getAdminPasscode() {
-  return process.env.PRIVATE_MEMO_ADMIN_PASSCODE || import.meta.env.PRIVATE_MEMO_ADMIN_PASSCODE || ''
+  return (
+    process.env.PRIVATE_MEMO_ADMIN_PASSCODE || import.meta.env.PRIVATE_MEMO_ADMIN_PASSCODE || ''
+  )
 }
 
 function normalizeText(value: unknown, maxLength: number): string | null {
@@ -52,67 +59,94 @@ function sanitizeId(value: unknown): string | null {
   return trimmed
 }
 
-async function readNotes(): Promise<NoteRecord[]> {
-  const store = getStore(STORE_NAME)
-  const raw = await store.get(STORE_KEY)
-  if (raw === null) return []
-  return parseStoredNotes(raw)
+async function readNotes() {
+  if (import.meta.env.DEV) return readPreviewNotes()
+  const entry = await getNotesStore().getWithMetadata(STORE_KEY)
+  if (entry === null) return { notes: [DEMO_NOTE], revision: 'new' }
+  if (!entry.etag) throw new Error('missing revision')
+  return { notes: parseStoredNotes(entry.data), revision: entry.etag }
 }
 
-async function writeNotes(notes: NoteRecord[]) {
-  const store = getStore(STORE_NAME)
-  await store.set(STORE_KEY, JSON.stringify(notes))
+function getNotesStore() {
+  return getStore({ name: STORE_NAME, consistency: 'strong' })
+}
+
+async function writeNotes(notes: NoteRecord[], revision: string) {
+  const result = await getNotesStore().set(
+    import.meta.env.DEV ? LOCAL_PREVIEW_KEY : STORE_KEY,
+    JSON.stringify(notes),
+    revision === 'new' ? { onlyIfNew: true } : { onlyIfMatch: revision }
+  )
+  if (!result.modified) return json({ error: 'conflict' }, 409)
+  if (!result.etag) throw new Error('missing revision')
+  return result.etag
+}
+
+async function readPreviewNotes() {
+  const store = getNotesStore()
+  // After the first local edit, keep using the isolated preview copy, including an empty one.
+  const preview = await store.getWithMetadata(LOCAL_PREVIEW_KEY)
+  if (preview !== null) {
+    if (!preview.etag) throw new Error('missing revision')
+    return { notes: parseStoredNotes(preview.data), revision: preview.etag }
+  }
+
+  const response = await fetch(new URL('/api/para-notes', themeConfig.site.website), {
+    signal: AbortSignal.timeout(8000),
+    cache: 'no-store'
+  })
+  if (!response.ok) throw new Error('notes unavailable')
+  const data: unknown = await response.json()
+  if (!data || typeof data !== 'object' || !('notes' in data) || !Array.isArray(data.notes)) {
+    throw new Error('invalid notes response')
+  }
+
+  const online = parseStoredNotes(JSON.stringify(data.notes))
+  const rawLocal = await store.get(STORE_KEY, { type: 'text' })
+  const local = rawLocal === null ? [] : parseStoredNotes(rawLocal)
+  const merged = new Map(online.map((note) => [note.id, note]))
+  for (const note of local) {
+    const current = merged.get(note.id)
+    if (
+      note.id !== DEMO_NOTE_ID &&
+      (!current || Date.parse(note.updatedAt) > Date.parse(current.updatedAt))
+    ) {
+      merged.set(note.id, note)
+    }
+  }
+  return {
+    notes: [...merged.values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
+    revision: 'new'
+  }
 }
 
 function parseStoredNotes(raw: string): NoteRecord[] {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
+  const parsed = JSON.parse(raw) as unknown
+  if (!Array.isArray(parsed)) throw new Error('invalid notes')
 
-    return parsed
-      .filter((item): item is NoteRecord => {
-        if (!item || typeof item !== 'object') return false
-        const note = item as Partial<NoteRecord>
-        return (
-          typeof note.id === 'string' &&
-          typeof note.title === 'string' &&
-          typeof note.content === 'string' &&
-          typeof note.createdAt === 'string' &&
-          typeof note.updatedAt === 'string'
-        )
-      })
-      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-  } catch {
-    return []
-  }
-}
-
-async function readStoreState() {
-  try {
-    const store = getStore(STORE_NAME)
-    const raw = await store.get(STORE_KEY)
-    if (raw === null) {
-      return {
-        initialized: false,
-        notes: [DEMO_NOTE]
-      }
-    }
-
-    return {
-      initialized: true,
-      notes: parseStoredNotes(raw)
-    }
-  } catch {
-    return {
-      initialized: false,
-      notes: [DEMO_NOTE]
-    }
-  }
+  return parsed
+    .map((item): NoteRecord => {
+      if (!item || typeof item !== 'object') throw new Error('invalid note')
+      const note = item as Partial<NoteRecord>
+      if (
+        typeof note.id !== 'string' ||
+        typeof note.title !== 'string' ||
+        typeof note.content !== 'string' ||
+        typeof note.createdAt !== 'string' ||
+        typeof note.updatedAt !== 'string'
+      )
+        throw new Error('invalid note')
+      return { ...note, category: normalizeParaCategory(note.category) } as NoteRecord
+    })
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
 }
 
 async function parseBody(request: Request) {
   try {
-    return (await request.json()) as Record<string, unknown>
+    const body: unknown = await request.json()
+    return body && typeof body === 'object' && !Array.isArray(body)
+      ? (body as Record<string, unknown>)
+      : null
   } catch {
     return null
   }
@@ -132,14 +166,11 @@ function authorize(passcode: unknown) {
 }
 
 export const GET: APIRoute = async () => {
-  const { notes } = await readStoreState()
-
-  return json(
-    {
-      notes
-    },
-    200
-  )
+  try {
+    return json(await readNotes())
+  } catch {
+    return json({ error: 'notes unavailable' }, 503)
+  }
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -156,6 +187,10 @@ export const POST: APIRoute = async ({ request }) => {
   const title = normalizeText(body.title, MAX_TITLE_LENGTH)
   const content = normalizeText(body.content, MAX_CONTENT_LENGTH)
 
+  if (body.category !== undefined && !isParaCategory(body.category)) {
+    return json({ error: 'invalid category' }, 400)
+  }
+
   if (!title || !content) {
     return json({ error: 'title or content is invalid' }, 400)
   }
@@ -165,15 +200,18 @@ export const POST: APIRoute = async ({ request }) => {
     id: crypto.randomUUID(),
     title,
     content,
+    category: normalizeParaCategory(body.category),
     createdAt: now,
     updatedAt: now
   }
 
   try {
-    const notes = await readNotes()
+    const { notes, revision } = await readNotes()
+    if (body.revision !== revision) return json({ error: 'conflict' }, 409)
     const nextNotes = [nextNote, ...notes.filter((note) => note.id !== DEMO_NOTE_ID)]
-    await writeNotes(nextNotes)
-    return json({ note: nextNote, notes: nextNotes }, 201)
+    const nextRevision = await writeNotes(nextNotes, revision)
+    if (nextRevision instanceof Response) return nextRevision
+    return json({ note: nextNote, notes: nextNotes, revision: nextRevision }, 201)
   } catch {
     return json({ error: 'storage unavailable' }, 503)
   }
@@ -190,12 +228,17 @@ export const PUT: APIRoute = async ({ request }) => {
   const title = normalizeText(body.title, MAX_TITLE_LENGTH)
   const content = normalizeText(body.content, MAX_CONTENT_LENGTH)
 
+  if (body.category !== undefined && !isParaCategory(body.category)) {
+    return json({ error: 'invalid category' }, 400)
+  }
+
   if (!id || !title || !content) {
     return json({ error: 'id, title, or content is invalid' }, 400)
   }
 
   try {
-    const notes = await readNotes()
+    const { notes, revision } = await readNotes()
+    if (body.revision !== revision) return json({ error: 'conflict' }, 409)
     const index = notes.findIndex((note) => note.id === id)
     if (index === -1) return json({ error: 'note not found' }, 404)
 
@@ -203,6 +246,8 @@ export const PUT: APIRoute = async ({ request }) => {
       ...notes[index],
       title,
       content,
+      category:
+        body.category === undefined ? notes[index].category : normalizeParaCategory(body.category),
       updatedAt: new Date().toISOString()
     }
 
@@ -210,8 +255,9 @@ export const PUT: APIRoute = async ({ request }) => {
     nextNotes[index] = updatedNote
     nextNotes.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
 
-    await writeNotes(nextNotes)
-    return json({ note: updatedNote, notes: nextNotes }, 200)
+    const nextRevision = await writeNotes(nextNotes, revision)
+    if (nextRevision instanceof Response) return nextRevision
+    return json({ note: updatedNote, notes: nextNotes, revision: nextRevision }, 200)
   } catch {
     return json({ error: 'storage unavailable' }, 503)
   }
@@ -228,17 +274,14 @@ export const DELETE: APIRoute = async ({ request }) => {
   if (!id) return json({ error: 'invalid id' }, 400)
 
   try {
-    const notes = await readNotes()
+    const { notes, revision } = await readNotes()
+    if (body.revision !== revision) return json({ error: 'conflict' }, 409)
     const nextNotes = notes.filter((note) => note.id !== id)
-    if (id === DEMO_NOTE_ID && notes.some((note) => note.id === DEMO_NOTE_ID)) {
-      await writeNotes([])
-      return json({ notes: [] }, 200)
-    }
-
     if (nextNotes.length === notes.length) return json({ error: 'note not found' }, 404)
 
-    await writeNotes(nextNotes)
-    return json({ notes: nextNotes }, 200)
+    const nextRevision = await writeNotes(nextNotes, revision)
+    if (nextRevision instanceof Response) return nextRevision
+    return json({ notes: nextNotes, revision: nextRevision }, 200)
   } catch {
     return json({ error: 'storage unavailable' }, 503)
   }

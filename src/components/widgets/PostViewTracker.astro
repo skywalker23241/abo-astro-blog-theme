@@ -1,0 +1,44 @@
+---
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+---
+
+<span class="post-view-tracker" data-post-view-slug={slug} aria-hidden="true"></span>
+
+<script is:inline>
+  ;(function () {
+    function init() {
+      const tracker = document.querySelector('[data-post-view-slug]')
+      if (!tracker || tracker.dataset.viewInit === '1') return
+      tracker.dataset.viewInit = '1'
+
+      const slug = tracker.dataset.postViewSlug
+      if (!slug) return
+
+      const key = `post-view-recorded:${slug}`
+      try {
+        if (localStorage.getItem(key) === '1') return
+      } catch {
+        return
+      }
+
+      fetch('/api/post-views', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ slug })
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error('view tracking failed')
+          localStorage.setItem(key, '1')
+        })
+        .catch(() => {})
+    }
+
+    if (document.readyState !== 'loading') init()
+    else document.addEventListener('DOMContentLoaded', init, { once: true })
+    document.addEventListener('astro:page-load', init)
+  })()
+</script>

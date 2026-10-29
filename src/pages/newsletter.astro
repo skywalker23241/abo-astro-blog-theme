@@ -1,138 +1,294 @@
 ---
-import IndexLayout from '../layouts/IndexLayout.astro'
-import RssSimple from 'phosphor-astro/RssSimple.astro'
-import Envelope from 'phosphor-astro/Envelope.astro'
 import { themeConfig } from '@/config'
+import IndexLayout from '@/layouts/IndexLayout.astro'
+import InlineHint from '@/components/ui/InlineHint.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import RailLinks from '@/components/layout/RailLinks.astro'
+import ArrowRight from 'phosphor-astro/ArrowRight.astro'
+import ArrowUpRight from 'phosphor-astro/ArrowUpRight.astro'
+import EnvelopeSimple from 'phosphor-astro/EnvelopeSimple.astro'
 
-const pageTitle = 'Newsletter'
-const pageDescription = 'Get new posts by email'
-
-// Replace 'your-username' with your Buttondown username (https://buttondown.com)
-const buttondownUsername = 'your-username'
-const rssUrl = new URL('rss.xml', themeConfig.site.website).href
+const pageTitle = '订阅'
+const pageDescription = '通过邮件接收新文章'
 ---
 
-<IndexLayout title={pageTitle} description={pageDescription}>
-  <div class="newsletter-page">
-    <p class="newsletter-note">Only sent when there is a new post — RSS works too.</p>
-    <form
-      action={`https://buttondown.com/api/emails/embed-subscribe/${buttondownUsername}`}
-      method="post"
-      target="popupwindow"
-      onsubmit={`window.open('https://buttondown.com/${buttondownUsername}', 'popupwindow')`}
-      class="form"
-    >
-      <div class="input-wrapper">
-        <Envelope width={18} height={18} class="input-icon" />
-        <input type="email" name="email" id="bd-email" placeholder="your@email.com" required />
+<IndexLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`订阅 · ${themeConfig.site.title}`}
+  noindex
+>
+  <div class="newsletter-page minimal-page">
+    <MinimalPageHeader
+      meta="01 / RSS"
+      title="订阅"
+      suffix="邮件与 RSS"
+      metaLabel="邮件与 RSS 订阅"
+    />
+
+    <section id="email-subscribe" class="subscribe-block minimal-index-row">
+      <span class="minimal-index-marker" aria-hidden="true">04</span>
+      <div class="subscribe-content minimal-index-content glass-card">
+        <div class="subscribe-symbol" aria-hidden="true">
+          <EnvelopeSimple width="1.625rem" height="1.625rem" aria-hidden="true" />
+        </div>
+        <h2>订阅此博客</h2>
+        <form
+          action="https://buttondown.com/api/emails/embed-subscribe/junbo"
+          method="post"
+          data-astro-reload
+          class="subscribe-form"
+        >
+          <label for="bd-email">邮箱地址</label>
+          <div class="subscribe-controls">
+            <input
+              type="email"
+              name="email"
+              id="bd-email"
+              placeholder="你的邮箱地址"
+              autocomplete="email"
+              inputmode="email"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-describedby="subscribe-help"
+              required
+            />
+            <input type="hidden" name="embed" value="1" />
+            <button type="submit">
+              <span>订阅</span>
+              <ArrowRight width="1.0625rem" height="1.0625rem" aria-hidden="true" />
+            </button>
+          </div>
+        </form>
+        <p id="subscribe-help" class="subscribe-note">
+          <InlineHint>提交后请按提示验证邮箱。</InlineHint>
+        </p>
+        <a
+          class="subscribe-credit"
+          href="https://buttondown.com/junbo"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <EnvelopeSimple width="0.875rem" height="0.875rem" aria-hidden="true" />
+          <span>Powered by buttondown</span>
+        </a>
       </div>
-      <button type="submit" aria-label="Subscribe">→</button>
-      <a
-        href={`https://rss.beauty/rss?url=${encodeURIComponent(rssUrl)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="rss"
-        aria-label="RSS"
-        title="RSS"
-      >
-        <RssSimple width={18} height={18} />
-      </a>
-    </form>
+      <div id="feed-subscribe" class="feed-subscribe">
+        <div class="feed-links">
+          <a href="/rss.xml" class="rss-link" target="_blank" rel="noopener noreferrer">
+            <span>RSS</span>
+            <ArrowUpRight width="1rem" height="1rem" aria-hidden="true" />
+          </a>
+          <a href="/atom.xml" class="rss-link" target="_blank" rel="noopener noreferrer">
+            <span>Atom</span>
+            <ArrowUpRight width="1rem" height="1rem" aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <RailLinks
+    slot="rail"
+    title="订阅方式"
+    links={[
+      { href: '#email-subscribe', label: '邮件订阅' },
+      { href: '/rss.xml', label: 'RSS Feed' },
+      { href: '/atom.xml', label: 'Atom Feed' },
+      {
+        href: 'https://buttondown.com/junbo/archive/u81f4-u8ba2-u9605-u8005-u7684-u4e00-u5c01-u4fe1/',
+        label: '致订阅者的一封信'
+      }
+    ]}
+  />
 </IndexLayout>
 
 <style>
-  .form {
+  .subscribe-block {
+    margin-bottom: 3.75rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .subscribe-content {
+    --card-padding: clamp(1.4rem, 5vw, 2.25rem);
+  }
+
+  .subscribe-symbol {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-
-  .newsletter-page {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-  }
-
-  .newsletter-note {
-    margin: 0;
-    color: var(--text-tertiary);
-    font-size: var(--font-size-s);
-    line-height: 1.6;
-  }
-
-  .input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex: 1;
-  }
-
-  .input-icon {
-    position: absolute;
-    left: 0.75rem;
-    color: var(--text-tertiary);
-    pointer-events: none;
-  }
-
-  input {
-    width: 100%;
-    padding: 0.6rem 0.75rem 0.6rem 2.4rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border);
-    background: var(--bg);
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1.4rem;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--index-accent) 18%, transparent);
     color: var(--text-primary);
-    font-size: 0.9rem;
-    transition: border-color 0.2s ease;
+  }
+
+  .subscribe-form label {
+    display: block;
+    margin-bottom: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+  }
+
+  .subscribe-form {
+    margin-top: 1.75rem;
+  }
+
+  .subscribe-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.85rem;
+    background: var(--glass-surface-muted);
+  }
+
+  .subscribe-controls:focus-within {
+    border-color: var(--index-accent);
+  }
+
+  input[type='email'] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 0.65rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 1rem;
   }
 
   input:focus {
     outline: none;
-    border-color: var(--text-secondary);
   }
 
   input::placeholder {
     color: var(--text-tertiary);
   }
 
-  button {
-    width: 2.4rem;
-    height: 2.4rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border);
-    background: var(--text-primary);
-    color: var(--bg);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-  }
-
-  button:hover {
-    opacity: 0.8;
-  }
-
-  .rss {
+  .subscribe-controls button {
     display: inline-flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    width: 2.4rem;
-    height: 2.4rem;
-    color: var(--text-tertiary);
-    transition: color 0.2s ease;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.7rem 1rem;
+    border-radius: 0.6rem;
+    border: 0;
+    background: var(--index-accent);
+    color: #1a1a1a;
+    font: inherit;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.16s ease-out,
+      color 0.16s ease-out;
   }
 
-  .rss:hover {
+  .subscribe-controls button:hover {
+    background: color-mix(in srgb, var(--index-accent) 85%, white);
+  }
+
+  .subscribe-controls :global(svg) {
+    flex-shrink: 0;
+  }
+
+  .rss-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.85rem;
+    background: var(--glass-surface-muted);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition:
+      color 0.16s ease-out,
+      background-color 0.16s ease-out;
+  }
+
+  .rss-link:hover {
+    background: var(--glass-surface-strong);
     color: var(--text-primary);
   }
 
-  @media (max-width: 420px) {
-    .form {
-      align-items: stretch;
-      flex-wrap: wrap;
-    }
+  h2 {
+    margin: 0;
+    font-size: clamp(1.3rem, 3.5vw, 1.65rem);
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: -0.035em;
+  }
 
-    .input-wrapper {
-      flex-basis: 100%;
+  .subscribe-note {
+    margin: 0.8rem 0 1.15rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.7;
+  }
+
+  .subscribe-credit {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.25rem 0 0 auto;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    line-height: 1.7;
+    text-decoration: none;
+  }
+
+  .subscribe-credit span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .subscribe-credit :global(svg) {
+    flex-shrink: 0;
+  }
+
+  .feed-subscribe {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.75rem;
+    padding: 0 0.25rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .feed-links {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 520px) {
+    .feed-subscribe {
+      justify-content: flex-start;
+    }
+  }
+
+  :is(button, a):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    input,
+    button,
+    .rss-link {
+      transition: none;
     }
   }
 </style>

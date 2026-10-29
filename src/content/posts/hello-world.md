@@ -19,21 +19,21 @@ pnpm build     # 构建生产版本到 dist/
 推荐使用内置脚本自动生成 frontmatter：
 
 ```bash
-pnpm new "我的第一篇文章"
+pnpm new "我的第一篇文章" --slug my-first-post
 ```
 
-这会在 `src/content/posts/` 下创建 `我的第一篇文章.md`（文件名会自动转为 kebab-case）。以 `_` 开头的文件名会被视为草稿。
+这会在 `src/content/posts/` 下创建 `my-first-post.md`（文件名会自动转为 kebab-case）。以 `_` 开头的文件名会被视为草稿。
 
 每篇文章的 frontmatter 支持以下字段：
 
 ```yaml
 ---
-title: 文章标题            # 必填
-pubDate: '2026-07-08'      # 必填，发布日期
-updatedDate: '2026-07-09'  # 可选，更新日期
-description: 摘要           # 可选，用于 SEO 和列表页
-image: /og/cover.png       # 可选，封面图
-hasMath: true              # 可选，启用 KaTeX 数学公式
+title: 文章标题 # 必填
+pubDate: '2026-07-08' # 必填，发布日期
+updatedDate: '2026-07-09' # 可选，更新日期
+description: 摘要 # 可选，用于 SEO 和列表页
+image: /og/cover.png # 可选，封面图
+hasMath: true # 可选，启用 KaTeX 数学公式
 ---
 ```
 
@@ -45,5 +45,5 @@ hasMath: true              # 可选，启用 KaTeX 数学公式
 
 - 看看 [Markdown 语法示例](/markdown-syntax-guide) 了解支持的排版效果
 - 看看 [数学公式示例](/math-with-katex) 了解 KaTeX 用法
-- 编辑 `src/content/about/about.mdx` 修改「关于」页面
+- 编辑 `src/content/about/about.mdx` 修改欢迎首页
 - 删掉这些示例文章，开始写你自己的内容吧！

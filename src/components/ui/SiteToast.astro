@@ -1,0 +1,138 @@
+---
+import CheckCircle from 'phosphor-astro/CheckCircle.astro'
+import XCircle from 'phosphor-astro/XCircle.astro'
+import X from 'phosphor-astro/X.astro'
+---
+
+<div class="site-toast" data-site-toast hidden data-pagefind-ignore>
+  <span class="toast-progress-track" aria-hidden="true"><span data-toast-progress></span></span>
+  <span class="toast-success"
+    ><CheckCircle width="1.25rem" height="1.25rem" aria-hidden="true" /></span
+  >
+  <span class="toast-error"><XCircle width="1.25rem" height="1.25rem" aria-hidden="true" /></span>
+  <p data-toast-message role="status" aria-live="polite" aria-atomic="true"></p>
+  <button type="button" data-toast-close aria-label="关闭提示">
+    <X width="1rem" height="1rem" aria-hidden="true" />
+  </button>
+</div>
+
+<script>
+  import '@/scripts/site-toast'
+</script>
+
+<style>
+  .site-toast[hidden],
+  .site-toast:not([data-type='error']) .toast-error,
+  .site-toast[data-type='error'] .toast-success {
+    display: none;
+  }
+
+  .site-toast {
+    position: fixed;
+    top: max(1.25rem, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(30rem, calc(100% - 2rem));
+    padding: 0.75rem 0.85rem 0.75rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 1.15rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen), transparent 55%), var(--glass-surface-strong);
+    box-shadow: var(--glass-highlight), var(--glass-shadow);
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
+    color: var(--text-primary);
+    transform: translateX(-50%);
+    animation: toast-fade 0.16s ease-out;
+    opacity: 1;
+    transition: opacity 0.18s ease-out;
+  }
+
+  .site-toast[data-closing='true'] {
+    opacity: 0;
+    pointer-events: none;
+    animation: none;
+  }
+
+  .site-toast > :is(.toast-success, .toast-error) {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--index-accent);
+  }
+
+  .site-toast > :is(.toast-success, .toast-error, p, button) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .toast-progress-track {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  [data-toast-progress] {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--index-accent) 16%, transparent);
+    transform-origin: left;
+  }
+
+  .site-toast p {
+    min-width: 0;
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+
+  .site-toast button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    min-height: 2rem;
+    padding: 0.5rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .site-toast button:hover {
+    background: var(--link-hover-bg);
+  }
+
+  .site-toast button:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  @keyframes toast-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-toast {
+      animation: none;
+      transition: none;
+    }
+    .toast-progress-track {
+      display: none;
+    }
+  }
+</style>

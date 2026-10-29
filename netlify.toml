@@ -2,18 +2,11 @@
   publish = "dist"
   command = "pnpm run build"
 
-# Canonical domain redirects
+# Search moved into the categories page.
 [[redirects]]
-  from = "http://jackcooper.qzz.io/*"
-  to = "https://blog.abohack.com/:splat"
+  from = "/search/"
+  to = "/categories/"
   status = 301
-  force = true
-
-[[redirects]]
-  from = "https://jackcooper.qzz.io/*"
-  to = "https://blog.abohack.com/:splat"
-  status = 301
-  force = true
 
 # Redirects for Astro static assets
 [[redirects]]
@@ -40,21 +33,21 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), fullscreen=(self)"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' data: https:; frame-src https: player.bilibili.com; connect-src 'self' https:; object-src 'none'; worker-src 'self' blob:; child-src 'self' blob: player.bilibili.com;"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), fullscreen=(self \"https://player.bilibili.com\" \"https://www.youtube.com\" \"https://www.youtube-nocookie.com\" \"https://open.douyin.com\")"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' data: https:; frame-src https: player.bilibili.com; media-src 'self' https://media.example.com blob:; connect-src 'self' https:; object-src 'none'; worker-src 'self' blob:; child-src 'self' blob: player.bilibili.com;"
 
 # HTML pages
 [[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "public, max-age=86400, s-maxage=172800"
+    Cache-Control = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
     Vary = "Accept-Encoding"
 
 # Blog posts
 [[headers]]
   for = "/*/"
   [headers.values]
-    Cache-Control = "public, max-age=86400, s-maxage=172800"
+    Cache-Control = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
     Vary = "Accept-Encoding"
 
 # Homepage
@@ -65,6 +58,10 @@
     Vary = "Accept-Encoding"
 
 # Static assets
+# Only content-hashed paths may be immutable. Never blanket-match by extension
+# (e.g. /*.js): stable-named files like /pagefind/* and /scripts/* would get a
+# 1-year cache, freezing their response headers too — a cached CSP on
+# /pagefind/pagefind-worker.js is what governs WASM inside the search worker.
 [[headers]]
   for = "/fonts/*"
   [headers.values]
@@ -79,18 +76,6 @@
 
 [[headers]]
   for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-    Vary = "Accept-Encoding"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-    Vary = "Accept-Encoding"
-
-[[headers]]
-  for = "/*.js"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Vary = "Accept-Encoding"

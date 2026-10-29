@@ -1,0 +1,68 @@
+---
+interface Props {
+  entry?: boolean
+}
+
+const { entry = false } = Astro.props
+---
+
+<div
+  class="highlights-mode-transition"
+  data-highlights-transition
+  data-transition-entry={entry ? 'true' : undefined}
+  aria-hidden="true"
+  hidden
+>
+</div>
+
+<style is:global>
+  .highlights-mode-transition {
+    position: fixed;
+    z-index: 250;
+    inset: 0;
+    background: #09090b;
+    opacity: 0;
+    pointer-events: all;
+  }
+
+  .highlights-mode-transition[hidden] {
+    display: none;
+  }
+
+  .highlights-mode-transition.is-entry-ready {
+    opacity: 1;
+  }
+
+  .highlights-mode-transition.is-entry-ready.is-entering {
+    opacity: 0;
+    transition: opacity 0.28s ease-out;
+  }
+
+  html.highlights-mode-arrival {
+    overflow: hidden;
+  }
+
+  html.highlights-mode-arrival .combat-shell {
+    animation: highlights-page-arrival 0.28s ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .highlights-mode-transition,
+    html.highlights-mode-arrival .combat-shell {
+      animation: none;
+      transition: none;
+    }
+  }
+
+  @keyframes highlights-page-arrival {
+    from {
+      opacity: 0.72;
+      transform: translateY(0.35rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

@@ -1,0 +1,106 @@
+---
+import type { TOCItem } from '@/types'
+import type { RelatedPost } from '@/utils/related'
+import Header from '@/components/layout/Header.astro'
+import SiteRail from '@/components/layout/SiteRail.astro'
+import SiteSidebar from '@/components/layout/SiteSidebar.astro'
+
+interface Props {
+  title?: string
+  description?: string
+  toc?: TOCItem[]
+  readingTime?: string
+  recommendedPosts?: RelatedPost[]
+  isPost?: boolean
+}
+
+const { title, description, toc, readingTime, recommendedPosts, isPost } = Astro.props
+const hasCustomRail = Astro.slots.has('rail')
+---
+
+<div class="mobile-site-header">
+  <Header />
+</div>
+
+<div class="site-frame">
+  <SiteSidebar />
+  <div class="site-main-column">
+    <main>
+      <slot />
+    </main>
+    <slot name="footer" />
+  </div>
+  {
+    hasCustomRail ? (
+      <SiteRail
+        title={title}
+        description={description}
+        toc={toc}
+        readingTime={readingTime}
+        isPost={isPost}
+      >
+        <slot name="rail" />
+      </SiteRail>
+    ) : (
+      <SiteRail
+        title={title}
+        description={description}
+        toc={toc}
+        readingTime={readingTime}
+        recommendedPosts={recommendedPosts}
+        isPost={isPost}
+      />
+    )
+  }
+</div>
+
+<style>
+  .mobile-site-header {
+    height: calc(1.5rem + env(safe-area-inset-top));
+    margin-bottom: 0.5rem;
+  }
+
+  .site-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .site-main-column {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  main {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  @media (min-width: 1180px) {
+    .mobile-site-header {
+      display: none;
+    }
+
+    .site-frame {
+      grid-template-columns: 12rem minmax(0, 42rem) 12rem;
+      justify-content: space-between;
+      gap: 3.5rem;
+    }
+
+    /* Allow for tools or article metadata between the title and first content block. */
+    .site-frame:has(:global(.bookmark-tools), :global(.memo-tools), :global(.post-header)) {
+      --rail-start-offset: 11.5rem;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .site-frame {
+      grid-template-columns: 12rem minmax(0, 42rem) 12rem;
+      gap: 4rem;
+    }
+  }
+</style>

@@ -1,6 +1,8 @@
 ---
-import { themeConfig } from '@/config'
+import { themeConfig, integrationConfig } from '@/config'
 import BottomNav from '@/components/layout/BottomNav.astro'
+import Clock from 'phosphor-astro/Clock.astro'
+import Users from 'phosphor-astro/Users.astro'
 
 interface NavLink {
   href: string
@@ -14,32 +16,81 @@ interface Props {
 
 const { previousPostLink, nextPostLink } = Astro.props
 const today = new Date()
+const isHome = Astro.url.pathname === '/blog/'
+const normalizedPath = Astro.url.pathname === '/' ? '/' : Astro.url.pathname.replace(/\/$/, '')
+const minimalPaths = new Set([
+  '/blog',
+  '/categories',
+  '/nav',
+  '/friends',
+  '/now',
+  '/highlights',
+  '/newsletter',
+  '/para-notes',
+  '/404',
+  '/404.html'
+])
+const isMinimalIndex = minimalPaths.has(normalizedPath)
 ---
 
-<footer class="site-footer">
-  <BottomNav previousPostLink={previousPostLink} nextPostLink={nextPostLink} />
-  <hr />
+<footer class:list={['site-footer', { 'is-home': isHome, 'is-minimal-index': isMinimalIndex }]}>
+  {!isMinimalIndex && <BottomNav previousPostLink={previousPostLink} nextPostLink={nextPostLink} />}
+  {!isMinimalIndex && <hr />}
   <div class="footer-row">
     <span class="copyright">
-      &copy; {today.getFullYear()} {themeConfig.site.author}
+      &copy; {today.getFullYear()}
+      <a
+        class="footer-link"
+        href={integrationConfig.profile.authorUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {themeConfig.site.author}
+      </a>
     </span>
     <div class="footer-links">
-      <a href="/rss.xml" aria-label="RSS feed">rss</a>
-      <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">cc by-nc-sa</a>
+      <a class="footer-link" href="/rss.xml" aria-label="RSS feed">rss</a>
+      <a class="footer-link" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">
+        cc by-nc-sa
+      </a>
     </div>
   </div>
+  {
+    !isMinimalIndex && (
+      <div class="footer-stats" data-site-stats data-start-date={themeConfig.site.startDate}>
+        <span class="stat" title="本站已运行天数" aria-label="本站已运行天数">
+          <Clock width="0.875rem" height="0.875rem" class="stat-icon" />
+          <span class="stat-days">—</span>
+        </span>
+        <span class="stat" title="访客人数" aria-label="访客人数">
+          <Users width="0.875rem" height="0.875rem" class="stat-icon" />
+          <span class="stat-visitors">—</span>
+        </span>
+      </div>
+    )
+  }
 </footer>
 
 <style>
   .site-footer {
-    margin-top: 4.5rem;
-    font-size: var(--font-size-s);
+    width: 100%;
+    max-width: var(--reading-width);
+    margin: 4.5rem auto 0;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     color: var(--text-secondary);
+  }
+
+  .site-footer.is-minimal-index {
+    width: 100%;
+    max-width: var(--index-width);
+    margin: 2.5rem auto 0;
   }
 
   .site-footer hr {
     border: none;
-    border-top: 1px solid var(--border);
     margin: 0 0 1.05rem 0;
   }
 
@@ -72,18 +123,155 @@ const today = new Date()
       justify-content: center;
       width: 100%;
     }
+
+    .site-footer.is-minimal-index .footer-row {
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      text-align: left;
+    }
+
+    .site-footer.is-minimal-index .footer-links {
+      justify-content: flex-end;
+      width: auto;
+    }
   }
 
-  .footer-links a {
+  .site-footer .footer-link {
+    font: inherit;
+    letter-spacing: inherit;
     color: var(--text-secondary);
     text-decoration: none;
+    box-shadow: none;
     transition:
       color 0.15s ease-out,
-      box-shadow 0.15s ease-out;
+      background-position var(--link-fill-duration) var(--link-fill-ease);
   }
 
-  .footer-links a:hover {
+  .site-footer .footer-link:is(:hover, :focus-visible) {
     color: var(--text-primary);
-    box-shadow: inset 0 -0.28em 0 color-mix(in srgb, var(--selection) 100%, transparent);
+  }
+
+  .site-footer .footer-link:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .footer-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.85rem;
+    color: var(--text-tertiary);
+  }
+
+  .stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .stat :global(.stat-icon) {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .stat-days,
+  .stat-visitors {
+    font-variant-numeric: tabular-nums;
   }
 </style>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__siteStatsState ||= {
+      installed: false,
+      posting: false,
+      animated: false
+    })
+
+    // Count-up animation on first view; direct set afterwards (SPA navs) and
+    // for users preferring reduced motion.
+    function setCount(el, value, animate) {
+      if (!el) return
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (!animate || reduceMotion || value <= 0) {
+        el.textContent = String(value)
+        return
+      }
+      const duration = 900
+      const startTime = performance.now()
+      const step = (now) => {
+        const progress = Math.min((now - startTime) / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        el.textContent = String(Math.round(value * eased))
+        if (progress < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    }
+
+    function initSiteStats() {
+      const el = document.querySelector('[data-site-stats]')
+      if (!el || el.dataset.statsInit === '1') return
+      el.dataset.statsInit = '1'
+
+      const daysEl = el.querySelector('.stat-days')
+      const visitorsEl = el.querySelector('.stat-visitors')
+
+      const firstView = !state.animated
+      state.animated = true
+
+      const start = new Date(`${el.dataset.startDate}T00:00:00+08:00`)
+      if (daysEl && !Number.isNaN(start.getTime())) {
+        const days = Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1)
+        setCount(daysEl, days, firstView)
+      }
+
+      const render = (count) => {
+        if (!visitorsEl || typeof count !== 'number') return
+        setCount(visitorsEl, count, firstView && visitorsEl.dataset.animated !== '1')
+        visitorsEl.dataset.animated = '1'
+      }
+
+      fetch('/api/visit')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && typeof data.visitors === 'number') render(data.visitors)
+        })
+        .catch(() => {})
+
+      // Record the visit only on real article pages (the like widget only
+      // exists there), and only once per browser.
+      if (!document.querySelector('.like-widget[data-like-slug]')) return
+      if (state.posting) return
+      let recorded = null
+      try {
+        recorded = localStorage.getItem('site-visit-recorded')
+      } catch {
+        return
+      }
+      if (recorded === '1') return
+      state.posting = true
+      fetch('/api/visit', { method: 'POST' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && typeof data.visitors === 'number') {
+            localStorage.setItem('site-visit-recorded', '1')
+            render(data.visitors)
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          state.posting = false
+        })
+    }
+
+    if (document.readyState !== 'loading') initSiteStats()
+    else document.addEventListener('DOMContentLoaded', initSiteStats, { once: true })
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:page-load', initSiteStats)
+    }
+  })()
+</script>

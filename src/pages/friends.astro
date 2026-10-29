@@ -1,0 +1,267 @@
+---
+import { themeConfig } from '@/config'
+import SiteToast from '@/components/ui/SiteToast.astro'
+import InlineHint from '@/components/ui/InlineHint.astro'
+import IndexLayout from '@/layouts/IndexLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import { friendLinks } from '@/data/friends'
+import ArrowUpRight from 'phosphor-astro/ArrowUpRight.astro'
+import RssSimple from 'phosphor-astro/RssSimple.astro'
+import FriendSiteInfo from '@/components/widgets/FriendSiteInfo.astro'
+import GiscusLoader from '@/components/widgets/GiscusLoader.astro'
+
+const pageTitle = '友链'
+const pageDescription = '朋友们的个人博客，欢迎串门，也可以通过 RSS 订阅他们的更新。'
+---
+
+<IndexLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`友链 · ${themeConfig.site.title}`}
+>
+  <div class="friends-page minimal-page">
+    <MinimalPageHeader meta="Friends" title="友链" suffix="同行" />
+    <ul class="friend-list" aria-label="朋友的博客">
+      {
+        friendLinks.map((friend) => (
+          <li>
+            <article class="friend-card glass-card">
+              <a
+                class="friend-site"
+                href={friend.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`访问 ${friend.name}（新窗口）`}
+              >
+                <img
+                  src={friend.logo}
+                  alt=""
+                  width="56"
+                  height="56"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                />
+                <div class="friend-identity">
+                  <h2>{friend.name}</h2>
+                  <p>{new URL(friend.url).hostname}</p>
+                </div>
+                <ArrowUpRight width="1.125rem" height="1.125rem" aria-hidden="true" />
+              </a>
+              <p class="friend-description">{friend.description}</p>
+              <footer>
+                <a
+                  class="friend-rss"
+                  href={friend.rss}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`订阅 ${friend.name} 的 RSS（新窗口）`}
+                >
+                  <RssSimple width="1rem" height="1rem" aria-hidden="true" />
+                  <span>订阅 RSS</span>
+                </a>
+              </footer>
+            </article>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="mobile-site-info">
+      <FriendSiteInfo id="friends-site-info-mobile" />
+    </div>
+
+    <section class="friends-comments" aria-labelledby="friends-comments-title">
+      <h2 id="friends-comments-title">留言与交换友链</h2>
+      <p class="friends-section-description">
+        <InlineHint>想交换友链，欢迎留下你的站点名称、网址和简介，也可以在这里聊聊天。</InlineHint>
+      </p>
+      <div id="giscus-container" data-giscus-lang="zh-CN"></div>
+      <noscript><InlineHint>请启用 JavaScript 后查看评论。</InlineHint></noscript>
+    </section>
+  </div>
+  <div slot="rail" class="friends-rail-content">
+    <FriendSiteInfo id="friends-site-info" />
+  </div>
+  <GiscusLoader />
+  <SiteToast />
+  <script>
+    import { showToast } from '@/scripts/site-toast'
+    function initFriendCopy() {
+      document.querySelectorAll<HTMLElement>('.friends-site-info').forEach((card) => {
+        const button = card.querySelector<HTMLButtonElement>('.friends-copy')
+        const text = card.querySelector<HTMLElement>('.friends-copy-text')
+        if (!button || !text || button.dataset.initialized) return
+        button.dataset.initialized = 'true'
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(card.dataset.copyText || '')
+            showToast('本站友链信息已复制。')
+          } catch {
+            text.hidden = false
+            const range = document.createRange()
+            range.selectNodeContents(text)
+            const selection = window.getSelection()
+            selection?.removeAllRanges()
+            selection?.addRange(range)
+            showToast('自动复制失败，已选中本站信息，请手动复制。', 'error')
+          }
+        })
+      })
+    }
+    initFriendCopy()
+    document.addEventListener('astro:page-load', initFriendCopy)
+  </script>
+</IndexLayout>
+
+<style>
+  .friends-comments {
+    margin-top: 2.5rem;
+    scroll-margin-top: 6rem;
+  }
+
+  .friends-rail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .friends-comments h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .friends-section-description {
+    margin: 0.8rem 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.85;
+  }
+
+  :is(.friends-page, .mobile-site-info) :is(button, a, pre):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .mobile-site-info {
+    margin-top: 2rem;
+  }
+
+  #giscus-container {
+    min-width: 0;
+    min-height: 12rem;
+  }
+
+  .friend-list {
+    display: grid;
+    gap: 1.25rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .friend-list li,
+  .friend-identity {
+    min-width: 0;
+  }
+
+  .friend-card {
+    backdrop-filter: blur(12px) saturate(112%);
+    -webkit-backdrop-filter: blur(12px) saturate(112%);
+  }
+
+  .friend-site {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 0.5rem;
+  }
+
+  .friend-site img {
+    display: block;
+    width: 3.5rem;
+    height: 3.5rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.85rem;
+    object-fit: contain;
+    background: var(--glass-surface-strong);
+  }
+
+  .friend-site h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  .friend-identity p {
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
+  .friend-site :global(svg) {
+    color: var(--text-secondary);
+    transition: color 150ms ease;
+  }
+
+  .friend-site:is(:hover, :focus-visible) :global(svg) {
+    color: var(--text-primary);
+  }
+
+  .friend-description {
+    margin: 1.25rem 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+
+  .friend-card footer {
+    padding-top: 1rem;
+    border-top: 1px dashed var(--divider-color);
+  }
+
+  .friend-rss {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0 0.85rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 99rem;
+    background: var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+
+  .friend-rss:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--index-accent) 14%, var(--glass-surface));
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 520px) {
+    .friend-card {
+      padding: 1.15rem;
+    }
+
+    .friend-site {
+      gap: 0.75rem;
+    }
+  }
+
+  @media (min-width: 1180px) {
+    .mobile-site-info {
+      display: none;
+    }
+  }
+</style>

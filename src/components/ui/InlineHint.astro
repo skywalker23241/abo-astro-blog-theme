@@ -1,0 +1,46 @@
+---
+import Info from 'phosphor-astro/Info.astro'
+---
+
+<span class="inline-hint">
+  <Info width="1rem" height="1rem" aria-hidden="true" />
+  <span class="inline-hint-text"><slot /></span>
+</span>
+
+<style>
+  .inline-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--index-accent, var(--accent)) 5%, var(--bg));
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-regular);
+    line-height: 1.7;
+    text-align: start;
+  }
+
+  .inline-hint > :global(svg) {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.1375rem;
+    color: var(--text-secondary);
+  }
+
+  .inline-hint-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .inline-hint-text :global(a) {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>

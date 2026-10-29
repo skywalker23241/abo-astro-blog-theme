@@ -1,0 +1,36 @@
+---
+import IndexLayout from '@/layouts/IndexLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import PostList from '@/components/widgets/PostList.astro'
+import PopularPosts from '@/components/widgets/PopularPosts.astro'
+import RecentUpdates from '@/components/widgets/RecentUpdates.astro'
+import { themeConfig } from '@/config'
+import { getSortedFilteredPosts } from '@/utils/draft'
+
+const posts = await getSortedFilteredPosts()
+---
+
+<IndexLayout title={themeConfig.site.title} description={themeConfig.site.description}>
+  <div class="home-page minimal-page">
+    <MinimalPageHeader
+      meta={`${String(posts.length).padStart(2, '0')} / INDEX`}
+      title="文章"
+      suffix="时间线"
+      metaLabel={`${posts.length} 篇文章`}
+    />
+    <PostList posts={posts} />
+  </div>
+
+  <div class="home-rail" slot="rail">
+    <RecentUpdates posts={posts} />
+    <PopularPosts posts={posts} />
+  </div>
+</IndexLayout>
+
+<style>
+  .home-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+</style>

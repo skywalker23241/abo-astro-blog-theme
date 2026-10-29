@@ -1,0 +1,100 @@
+:root {
+  --index-accent: #8fcfb0;
+  --link-hover-bg: color-mix(in srgb, var(--index-accent) 28%, transparent);
+  --index-width: 34rem;
+  --reading-width: 40rem;
+}
+
+html.dark {
+  --index-accent: #d2be98;
+}
+
+.glass-card,
+.para-notes-page .memo-card,
+.para-notes-page .empty-state {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--card-padding, 1.5rem);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(145deg, var(--glass-sheen-soft), transparent 50%), var(--glass-surface);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-muted);
+}
+
+a.glass-card {
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+a.glass-card:is(:hover, :focus-visible) {
+  border-color: color-mix(in srgb, var(--index-accent) 58%, var(--glass-border));
+  background-color: var(--glass-surface-strong);
+}
+
+.minimal-page {
+  width: 100%;
+  max-width: var(--index-width);
+  margin: 0 auto;
+  padding: 1.8rem 0 1rem;
+}
+
+.minimal-index-row {
+  display: block;
+}
+
+.minimal-index-marker {
+  display: none;
+}
+
+.minimal-index-content {
+  min-width: 0;
+}
+
+.minimal-section-head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  min-height: 2.5rem;
+  padding: 0 0 0.7rem;
+}
+
+.minimal-section-head h2 {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+}
+
+.minimal-section-count {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.minimal-rule-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.minimal-rule-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 520px) {
+  .glass-card,
+  .para-notes-page .memo-card,
+  .para-notes-page .empty-state {
+    --card-padding: 1.15rem;
+  }
+  .minimal-page {
+    padding-top: 1.15rem;
+  }
+}

@@ -1,4 +1,6 @@
 ---
+import Heart from 'phosphor-astro/Heart.astro'
+
 interface Props {
   slug: string
 }
@@ -6,53 +8,47 @@ interface Props {
 const { slug } = Astro.props
 ---
 
-<div class="like-widget" data-like-slug={slug}>
-  <button type="button" class="like-button" aria-label="Like this post">
-    <svg
-      class="like-icon"
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.8"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <path
-        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      ></path>
-    </svg>
-    <span class="like-label">Like</span>
-    <span class="like-count" aria-live="polite">·</span>
-  </button>
-  <span class="like-hint" aria-hidden="true">Thanks for reading.</span>
+<div class="like-widget" data-like-slug={slug} data-pagefind-ignore>
+  <div class="like-action">
+    <button type="button" class="like-button" aria-label="喜欢这篇文章" aria-pressed="false">
+      <Heart class="like-icon" width="1.125rem" height="1.125rem" aria-hidden="true" />
+      <span class="like-label">Like</span>
+      <span class="like-count" aria-live="polite">·</span>
+    </button>
+  </div>
 </div>
 
 <style>
   .like-widget {
-    margin: 4rem 0 1.75rem 0;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
+    margin: 3.5rem 0 1.75rem;
+    padding: 1.6rem 0 2.5rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .like-action {
+    position: relative;
+    display: grid;
+    place-items: center;
   }
 
   .like-button {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-family: inherit;
-    font-size: var(--font-size-s);
-    color: var(--text-secondary);
-    background: transparent;
+    justify-content: center;
+    gap: 0.48rem;
+    min-width: 8.25rem;
+    min-height: 2.65rem;
+    padding: 0.58rem 1.1rem;
     border: 1px solid var(--border);
     border-radius: 999px;
-    padding: 0.4rem 0.95rem;
+    background: var(--bg);
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     cursor: pointer;
     transition:
       color 0.15s ease-out,
@@ -61,23 +57,43 @@ const { slug } = Astro.props
       transform 0.15s ease-out;
   }
 
+  .like-button::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--index-accent);
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .like-button:hover {
     color: var(--text-primary);
-    border-color: var(--text-secondary);
+    border-color: var(--index-accent);
+    transform: translateY(-0.12rem);
   }
 
   .like-button:active {
-    transform: scale(0.97);
+    transform: translateY(0) scale(0.96);
   }
 
   .like-button.is-liked {
     color: var(--text-primary);
-    border-color: var(--text-primary);
-    background: var(--code-bg);
+    border-color: var(--index-accent);
+    background: color-mix(in srgb, var(--index-accent) 13%, var(--bg));
+  }
+
+  .like-button.is-celebrating {
+    animation: like-button-bounce 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .like-button.is-celebrating::after {
+    animation: like-ring 0.62s ease-out;
   }
 
   .like-button.is-liked .like-icon {
     fill: currentColor;
+    color: var(--index-accent);
   }
 
   .like-button.is-loading {
@@ -91,15 +107,45 @@ const { slug } = Astro.props
   }
 
   .like-button.is-liked .like-icon {
-    animation: like-pop 0.35s ease-out;
+    animation: like-pop 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes like-button-bounce {
+    0% {
+      transform: scale(1);
+    }
+
+    35% {
+      transform: scale(0.92);
+    }
+
+    70% {
+      transform: scale(1.06);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes like-ring {
+    0% {
+      opacity: 0.75;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1.22, 1.55);
+    }
   }
 
   @keyframes like-pop {
     0% {
       transform: scale(1);
     }
-    50% {
-      transform: scale(1.25);
+    55% {
+      transform: scale(1.35) rotate(-8deg);
     }
     100% {
       transform: scale(1);
@@ -117,21 +163,17 @@ const { slug } = Astro.props
     color: var(--text-primary);
   }
 
-  .like-hint {
-    font-size: var(--font-size-s);
-    color: var(--text-tertiary);
-    font-style: italic;
-    font-family: var(--serif);
-  }
-
   @media (max-width: 520px) {
     .like-widget {
       margin-top: 3rem;
-      justify-content: flex-start;
     }
+  }
 
-    .like-hint {
-      display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .like-button.is-celebrating,
+    .like-button.is-celebrating::after,
+    .like-button.is-liked .like-icon {
+      animation: none;
     }
   }
 </style>
@@ -157,10 +199,28 @@ const { slug } = Astro.props
 
         const storageKey = `post-liked:${slug}`
         const liked = localStorage.getItem(storageKey) === '1'
-        if (liked) button.classList.add('is-liked')
+        if (liked) {
+          button.classList.add('is-liked')
+          button.setAttribute('aria-pressed', 'true')
+        }
 
         const render = (count) => {
           countEl.textContent = count > 0 ? String(count) : '·'
+        }
+
+        const animatePress = () => {
+          button.classList.remove('is-celebrating')
+          void button.offsetWidth
+          button.classList.add('is-celebrating')
+          window.setTimeout(() => button.classList.remove('is-celebrating'), 650)
+        }
+
+        const showThanks = () => {
+          document.dispatchEvent(
+            new CustomEvent('site:notify', {
+              detail: { message: '已点赞，谢谢喜欢。' }
+            })
+          )
         }
 
         fetch(`/api/like?slug=${encodeURIComponent(slug)}`)
@@ -173,6 +233,7 @@ const { slug } = Astro.props
         button.addEventListener('click', async () => {
           if (button.classList.contains('is-liked') || button.classList.contains('is-loading'))
             return
+          animatePress()
           button.classList.add('is-loading')
           try {
             const res = await fetch('/api/like', {
@@ -185,8 +246,14 @@ const { slug } = Astro.props
             if (typeof data?.count === 'number') render(data.count)
             localStorage.setItem(storageKey, '1')
             button.classList.add('is-liked')
+            button.setAttribute('aria-pressed', 'true')
+            showThanks()
           } catch {
-            // silent failure — user can retry
+            document.dispatchEvent(
+              new CustomEvent('site:notify', {
+                detail: { message: '点赞失败，请稍后重试。', type: 'error' }
+              })
+            )
           } finally {
             button.classList.remove('is-loading')
           }

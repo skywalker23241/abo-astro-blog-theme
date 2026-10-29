@@ -41,7 +41,12 @@ function isBlockedHost(hostname: string): boolean {
   if (host.includes(':')) {
     if (host === '::1' || host === '::') return true // loopback, unspecified
     if (host.startsWith('fc') || host.startsWith('fd')) return true // fc00::/7 ULA
-    if (host.startsWith('fe8') || host.startsWith('fe9') || host.startsWith('fea') || host.startsWith('feb'))
+    if (
+      host.startsWith('fe8') ||
+      host.startsWith('fe9') ||
+      host.startsWith('fea') ||
+      host.startsWith('feb')
+    )
       return true // fe80::/10 link-local
     // IPv4-mapped (::ffff:169.254.x.x etc.)
     const mapped = host.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)

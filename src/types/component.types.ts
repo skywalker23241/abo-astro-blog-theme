@@ -40,6 +40,7 @@ export interface BaseHeadProps {
   pageType?: 'website' | 'article'
   publishedTime?: Date
   modifiedTime?: Date
+  noindex?: boolean
 }
 
 // ImageOptimizer component props interface

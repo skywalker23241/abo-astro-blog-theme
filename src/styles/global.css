@@ -1,14 +1,34 @@
 @import './fonts.css';
 @import './post.css';
+@import './minimal-page.css';
+@import './interaction-motion.css';
 
 :root {
-  --content-width: 48rem;
+  --content-width: 82rem;
+
+  /* Ambient glass — quiet enough to sit behind long-form reading. */
+  --ambient-mint: rgba(143, 207, 176, 0.18);
+  --ambient-blue: rgba(172, 201, 226, 0.16);
+  --glass-surface: color-mix(in srgb, var(--bg) 72%, transparent);
+  --glass-surface-strong: color-mix(in srgb, var(--bg) 80%, transparent);
+  --glass-surface-muted: color-mix(in srgb, var(--bg) 62%, transparent);
+  --glass-border: color-mix(in srgb, white 56%, var(--border));
+  --glass-border-muted: color-mix(in srgb, var(--glass-border) 82%, transparent);
+  --glass-shadow: 0 1.2rem 3rem color-mix(in srgb, var(--text-primary) 7%, transparent);
+  --glass-shadow-muted: 0 1rem 2.5rem color-mix(in srgb, var(--text-primary) 5%, transparent);
+  --glass-highlight: inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
+  --glass-highlight-muted: inset 0 1px 0 color-mix(in srgb, white 52%, transparent);
+  --glass-sheen: color-mix(in srgb, white 20%, transparent);
+  --glass-sheen-soft: color-mix(in srgb, white 18%, transparent);
+  --glass-control-highlight: inset 0 1px 0 color-mix(in srgb, white 36%, transparent);
 
   /* Typography */
-  --sans:
-    AlanSans-Regular, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-    Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  --serif: Besley, Charter, Baskerville, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --reading-font:
+    'Noto Sans SC Site', 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei UI',
+    'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Arial, sans-serif;
+  --sans: var(--reading-font);
+  --serif: var(--reading-font);
   --mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   --font-size-s: 0.875rem;
@@ -24,6 +44,8 @@
 
   --spacing-s: -0.04em;
   --spacing-m: -0.01em;
+  --link-fill-duration: 380ms;
+  --link-fill-ease: cubic-bezier(0.32, 0, 0.18, 1);
 
   /* Light Mode (default) */
   --bg: #fafaf7;
@@ -31,22 +53,23 @@
   --text-secondary: #666666;
   --text-tertiary: #999999;
   --border: #e5e5e0;
+  --divider-color: color-mix(in srgb, var(--border) 60%, transparent);
   --selection: rgba(0, 0, 0, 0.08);
   --code-bg: #f0f0ea;
   --mark: #fff4a3;
   --accent: #1a1a1a;
 
-  /* Syntax Theme */
-  --astro-code-foreground: #1a1a1a;
+  /* Syntax Theme — grayscale tiers: function > plain > keyword > string > punctuation > comment */
+  --astro-code-foreground: #333333;
   --astro-code-background: #f0f0ea;
-  --astro-code-token-constant: #1a1a1a;
-  --astro-code-token-string: #1a1a1a;
+  --astro-code-token-constant: #333333;
+  --astro-code-token-string: #777777;
   --astro-code-token-comment: #999999;
   --astro-code-token-keyword: #555555;
-  --astro-code-token-parameter: #1a1a1a;
+  --astro-code-token-parameter: #333333;
   --astro-code-token-function: #1a1a1a;
-  --astro-code-token-string-expression: #555555;
-  --astro-code-token-punctuation: #555555;
+  --astro-code-token-string-expression: #777777;
+  --astro-code-token-punctuation: #8a8a8a;
   --astro-code-token-link: #555555;
 }
 
@@ -60,33 +83,61 @@ html.dark {
   --code-bg: #242424;
   --mark: #5a5530;
   --accent: #e8e8e8;
+  --ambient-mint: rgba(92, 174, 139, 0.16);
+  --ambient-blue: rgba(104, 145, 183, 0.17);
+  --glass-surface: color-mix(in srgb, #252a29 52%, transparent);
+  --glass-surface-strong: color-mix(in srgb, #252a29 62%, transparent);
+  --glass-surface-muted: color-mix(in srgb, #252a29 40%, transparent);
+  --glass-border: color-mix(in srgb, white 13%, transparent);
+  --glass-border-muted: color-mix(in srgb, white 9%, transparent);
+  --glass-shadow: 0 1.35rem 3.4rem color-mix(in srgb, black 22%, transparent);
+  --glass-shadow-muted: 0 1rem 2.6rem color-mix(in srgb, black 13%, transparent);
+  --glass-highlight: inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+  --glass-highlight-muted: inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
+  --glass-sheen: color-mix(in srgb, white 8%, transparent);
+  --glass-sheen-soft: color-mix(in srgb, white 6%, transparent);
+  --glass-control-highlight: inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
 
-  --astro-code-foreground: #e8e8e8;
+  --astro-code-foreground: #d4d4d4;
   --astro-code-background: #242424;
-  --astro-code-token-constant: #e8e8e8;
-  --astro-code-token-string: #e8e8e8;
+  --astro-code-token-constant: #d4d4d4;
+  --astro-code-token-string: #8f8f8f;
   --astro-code-token-comment: #707070;
   --astro-code-token-keyword: #a0a0a0;
-  --astro-code-token-parameter: #e8e8e8;
-  --astro-code-token-function: #e8e8e8;
-  --astro-code-token-string-expression: #a0a0a0;
-  --astro-code-token-punctuation: #a0a0a0;
+  --astro-code-token-parameter: #d4d4d4;
+  --astro-code-token-function: #f0f0f0;
+  --astro-code-token-string-expression: #8f8f8f;
+  --astro-code-token-punctuation: #858585;
   --astro-code-token-link: #a0a0a0;
+}
+
+/* Scale the existing rem typography and spacing together so text can reflow. */
+html[data-blog][data-reading-size='112.5'] {
+  font-size: 112.5%;
+}
+
+html[data-blog][data-reading-size='125'] {
+  font-size: 125%;
 }
 
 html {
   background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 18% 11%, var(--ambient-mint) 0, transparent 32rem),
+    radial-gradient(circle at 82% 26%, var(--ambient-blue) 0, transparent 36rem);
+  background-attachment: fixed;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+  /* full-bleed 100vw elements (site header) overflow by the classic-scrollbar
+     width on Windows; clip creates no scroll container so sticky still works */
+  overflow-x: clip;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 body {
   font-family: var(--sans);
-  font-feature-settings:
-    'ss03' 1,
-    'palt' 1;
+  font-kerning: normal;
   font-size: var(--font-size-m);
   text-rendering: optimizeLegibility;
   line-height: 1.75;
@@ -98,16 +149,40 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  letter-spacing: var(--spacing-m);
+  letter-spacing: 0;
   padding: 2.5rem 1.5rem 2rem 1.5rem;
+  width: 100%;
   max-width: var(--content-width);
   overscroll-behavior-y: contain;
   transition: background-color 0.15s ease-out;
 }
 
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --glass-surface: var(--bg);
+    --glass-surface-strong: var(--bg);
+    --glass-surface-muted: var(--bg);
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    background-attachment: scroll;
+    background-image:
+      radial-gradient(circle at 0 8%, var(--ambient-mint) 0, transparent 20rem),
+      radial-gradient(circle at 100% 24%, var(--ambient-blue) 0, transparent 23rem);
+  }
+}
+
 @media (max-width: 768px) {
   body {
     padding: 1.75rem 1.25rem 1.5rem 1.25rem;
+  }
+}
+
+@media (min-width: 1180px) {
+  body {
+    padding: 2.75rem 2rem 2rem;
   }
 }
 
@@ -136,6 +211,44 @@ body {
 :focus-visible {
   outline: 2px solid var(--text-tertiary);
   outline-offset: 2px;
+}
+
+/* Fill ordinary link text from bottom to top without altering link layout or controls. */
+@supports (-webkit-background-clip: text) {
+  :where(
+    body:not(.highlights-body)
+      a:not(.toc-link):not(:has(> span, > div, > article, > section, > img, > picture, > video)),
+    body:not(.highlights-body) a > span:not(.sr-only, [aria-hidden='true'])
+  ) {
+    background-image: linear-gradient(
+      to bottom,
+      currentColor 0 50%,
+      var(--index-accent, var(--accent)) 50% 100%
+    );
+    background-position: 0 0;
+    background-size: 100% 200%;
+    background-repeat: no-repeat;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: background-position var(--link-fill-duration) var(--link-fill-ease);
+  }
+
+  :where(body:not(.highlights-body) a:is(:hover, :focus-visible))
+    > span:not(.sr-only, [aria-hidden='true']),
+  :where(
+    body:not(.highlights-body)
+      a:is(:hover, :focus-visible):not(.toc-link):not(
+        :has(> span, > div, > article, > section, > img, > picture, > video)
+      )
+  ) {
+    background-position: 0 100%;
+  }
+
+  :where(body:not(.highlights-body) a)::before,
+  :where(body:not(.highlights-body) a)::after {
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 main {
@@ -184,7 +297,7 @@ main {
 .card {
   padding: 1rem 1.25rem;
   background-color: var(--code-bg);
-  border-radius: 4px;
+  border-radius: 0;
   margin: 1.75em 0;
   border: 1px solid var(--border);
 }
@@ -247,7 +360,7 @@ svg {
   max-width: 80%;
   background: var(--code-bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 0.75rem 1rem;
   margin: 0.5rem 0;
   font-size: 1rem;

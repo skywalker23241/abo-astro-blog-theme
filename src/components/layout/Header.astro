@@ -1,23 +1,38 @@
 ---
+import { themeConfig, integrationConfig } from '@/config'
 import ThemeToggle from '@/components/ui/ThemeToggle.astro'
-import { themeConfig } from '@/config'
+import FontSizeControl from '@/components/ui/FontSizeControl.astro'
 import { primaryNavLinks } from '@/lib/navigation'
 import BookmarkSimple from 'phosphor-astro/BookmarkSimple.astro'
-import Compass from 'phosphor-astro/Compass.astro'
+import MagnifyingGlass from 'phosphor-astro/MagnifyingGlass.astro'
+import List from 'phosphor-astro/List.astro'
 import Folders from 'phosphor-astro/Folders.astro'
-import GridFour from 'phosphor-astro/GridFour.astro'
+import GameController from 'phosphor-astro/GameController.astro'
+import Globe from 'phosphor-astro/Globe.astro'
 import House from 'phosphor-astro/House.astro'
 import NotePencil from 'phosphor-astro/NotePencil.astro'
+import Pulse from 'phosphor-astro/Pulse.astro'
 import RssSimple from 'phosphor-astro/RssSimple.astro'
 import X from 'phosphor-astro/X.astro'
+import Users from 'phosphor-astro/Users.astro'
+import CirclesFour from 'phosphor-astro/CirclesFour.astro'
+import ArrowUpRight from 'phosphor-astro/ArrowUpRight.astro'
+
+interface Props {
+  showPageRail?: boolean
+}
+
+const { showPageRail = true } = Astro.props
 
 const pageDescriptions = {
-  '/': 'Post timeline',
-  '/categories': 'Browse by topic',
-  '/now': 'What I am up to',
-  '/nav': 'Frequently used sites',
-  '/newsletter': 'Email subscription',
-  '/para-notes': 'Short notes'
+  '/blog': '文章时间线',
+  '/categories': '按主题浏览',
+  '/now': '近况记录',
+  '/highlights': '游戏精彩时刻',
+  '/nav': '常用站点',
+  '/friends': '朋友们的博客',
+  '/newsletter': '邮件订阅',
+  '/para-notes': '碎片笔记'
 }
 
 function getPrimaryLink(href: string) {
@@ -33,64 +48,111 @@ function isPrimaryLinkActive(pathname: string, href: string) {
     : normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`)
 }
 
-const quickNavLinks = [
-  { ...getPrimaryLink('/'), description: pageDescriptions['/'], icon: House },
+interface QuickNavItem {
+  href: string
+  label: string
+  description: string
+  icon: typeof House
+  external?: boolean
+}
+
+const quickNavItems: QuickNavItem[] = [
+  { ...getPrimaryLink('/blog/'), description: pageDescriptions['/blog'], icon: House },
   {
-    ...getPrimaryLink('/categories'),
-    description: pageDescriptions['/categories'],
+    ...getPrimaryLink('/categories/'),
+    description: '分类浏览与全文搜索',
     icon: Folders
   },
-  { ...getPrimaryLink('/now'), description: pageDescriptions['/now'], icon: Compass },
-  { ...getPrimaryLink('/nav'), description: pageDescriptions['/nav'], icon: BookmarkSimple },
+  { ...getPrimaryLink('/now/'), description: pageDescriptions['/now'], icon: Pulse },
   {
-    ...getPrimaryLink('/newsletter'),
+    ...getPrimaryLink('/highlights/'),
+    description: pageDescriptions['/highlights'],
+    icon: GameController
+  },
+  { ...getPrimaryLink('/nav/'), description: pageDescriptions['/nav'], icon: BookmarkSimple },
+  { ...getPrimaryLink('/friends/'), description: pageDescriptions['/friends'], icon: Users },
+  {
+    ...getPrimaryLink('/newsletter/'),
     description: pageDescriptions['/newsletter'],
     icon: RssSimple
   },
   {
-    ...getPrimaryLink('/para-notes'),
+    ...getPrimaryLink('/para-notes/'),
     description: pageDescriptions['/para-notes'],
     icon: NotePencil
-  }
-].map((link) => ({
+  },
+  ...integrationConfig.profile.quickLinks.map((link) => ({ ...link, icon: Globe, external: true }))
+]
+
+const quickNavLinks = quickNavItems.map((link) => ({
   ...link,
   active: isPrimaryLinkActive(Astro.url.pathname, link.href)
 }))
 ---
 
-<header class="site-header">
+<header class="site-header is-narrow-page">
   <nav class="site-nav" aria-label="Primary">
-    <a class="site-brand" href="/" aria-label={`${themeConfig.site.title} home`}>
-      <img
-        class="brand-logo brand-logo-light"
-        src="/logo-light.png"
-        alt={themeConfig.site.title}
-        width="184"
-        height="112"
-      />
-      <img
-        class="brand-logo brand-logo-dark"
-        src="/logo-dark.png"
-        alt=""
-        width="184"
-        height="112"
-      />
-    </a>
+    <a class="site-brand" href="/blog/" aria-label="返回博客首页">{themeConfig.site.title}</a>
     <div class="nav-actions">
+      {
+        Astro.url.pathname.replace(/\/$/, '') !== '/highlights' && (
+          <FontSizeControl placement="header" />
+        )
+      }
+      <ThemeToggle />
+      <a class="header-search" href="/categories/#search" aria-label="搜索文章">
+        <MagnifyingGlass width="1.25rem" height="1.25rem" aria-hidden="true" />
+      </a>
       <div class="quick-nav" data-quick-nav>
         <button
           class="quick-nav-toggle"
           type="button"
-          aria-label="Open quick navigation"
+          aria-label="打开快速导航"
           aria-expanded="false"
           aria-controls="quick-nav-panel"
           data-quick-nav-toggle
         >
-          <GridFour width={19} height={19} class="quick-nav-icon quick-nav-icon-open" />
-          <X width={18} height={18} class="quick-nav-icon quick-nav-icon-close" />
+          <CirclesFour
+            width="1.25rem"
+            height="1.25rem"
+            class="quick-nav-icon quick-nav-icon-open"
+            aria-hidden="true"
+          />
+          <X
+            width="1.25rem"
+            height="1.25rem"
+            class="quick-nav-icon quick-nav-icon-close"
+            aria-hidden="true"
+          />
         </button>
       </div>
-      <ThemeToggle />
+      {
+        showPageRail && (
+          <button
+            class="page-rail-toggle"
+            type="button"
+            aria-label="打开页面目录"
+            aria-haspopup="dialog"
+            aria-controls="mobile-page-rail"
+            aria-expanded="false"
+            data-open-page-rail
+          >
+            <List
+              width="1.25rem"
+              height="1.25rem"
+              class="page-rail-icon page-rail-icon-open"
+              aria-hidden="true"
+            />
+            <X
+              width="1.25rem"
+              height="1.25rem"
+              class="page-rail-icon page-rail-icon-close"
+              aria-hidden="true"
+            />
+            <span>目录</span>
+          </button>
+        )
+      }
     </div>
   </nav>
 </header>
@@ -99,39 +161,58 @@ const quickNavLinks = [
   <button
     class="quick-nav-backdrop"
     type="button"
-    aria-label="Close quick navigation"
+    aria-label="关闭快速导航"
     data-quick-nav-backdrop
     hidden></button>
 
   <aside
     class="quick-nav-panel"
     id="quick-nav-panel"
-    aria-label="Quick navigation"
+    aria-label="快速导航"
     data-quick-nav-panel
     hidden
   >
     <div class="quick-nav-panel-head">
-      <span>Quick navigation</span>
-      <button class="quick-nav-close" type="button" aria-label="Close quick navigation" data-quick-nav-close>
-        <X width={17} height={17} />
+      <button class="quick-nav-close" type="button" aria-label="关闭快速导航" data-quick-nav-close>
+        <X width="1.0625rem" height="1.0625rem" aria-hidden="true" />
       </button>
     </div>
     <div class="quick-nav-grid">
       {
-        quickNavLinks.map((link) => {
+        quickNavLinks.map((link, index) => {
           const Icon = link.icon
 
           return (
             <a
-              class={link.active ? 'quick-nav-link is-active' : 'quick-nav-link'}
+              class:list={[
+                'quick-nav-link',
+                { 'is-active': link.active, 'is-external': link.external }
+              ]}
               href={link.href}
+              style={`--stagger-index: ${index}`}
+              data-astro-reload={link.href === '/highlights/' ? true : undefined}
               aria-current={link.active ? 'page' : undefined}
+              target={link.external ? '_blank' : undefined}
+              rel={link.external ? 'noopener' : undefined}
             >
-              <Icon width={18} height={18} class="quick-nav-link-icon" />
+              <Icon
+                width="1.125rem"
+                height="1.125rem"
+                class="quick-nav-link-icon"
+                aria-hidden="true"
+              />
               <span class="quick-nav-copy">
                 <span class="quick-nav-label">{link.label}</span>
                 <span class="quick-nav-description">{link.description}</span>
               </span>
+              {link.external && (
+                <ArrowUpRight
+                  width="0.8125rem"
+                  height="0.8125rem"
+                  class="quick-nav-external"
+                  aria-hidden="true"
+                />
+              )}
             </a>
           )
         })
@@ -142,26 +223,54 @@ const quickNavLinks = [
 
 <style>
   .site-header {
-    position: sticky;
+    --header-icon-color: #000;
+    --header-motion-duration: 0.24s;
+    --header-opacity-duration: 0.22s;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 50;
-    margin-top: -2.5rem;
-    margin-bottom: 2.25rem;
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
-    padding-top: 2.5rem;
-    background-color: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    margin: 0;
+    width: auto;
+    padding-top: env(safe-area-inset-top);
+    background-color: transparent;
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
     transition:
+      transform var(--header-motion-duration) cubic-bezier(0.22, 1, 0.36, 1),
+      opacity var(--header-opacity-duration) ease-out,
       background-color 0.18s ease-out,
-      box-shadow 0.18s ease-out;
+      box-shadow 0.18s ease-out,
+      backdrop-filter 0.18s ease-out,
+      -webkit-backdrop-filter 0.18s ease-out;
+  }
+
+  :global(html.dark) .site-header {
+    --header-icon-color: var(--text-primary);
   }
 
   .site-header.is-scrolled {
     background-color: color-mix(in srgb, var(--bg) 92%, transparent);
     box-shadow: 0 0.35rem 1.4rem color-mix(in srgb, var(--text-primary) 7%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .site-header.is-hidden {
+    --header-motion-duration: 0.18s;
+    --header-opacity-duration: 0.16s;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(0, calc(-100% - 0.75rem), 0);
+  }
+
+  .site-header.is-hidden:focus-within {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 
   .site-nav {
@@ -176,6 +285,12 @@ const quickNavLinks = [
     padding: 0 1.5rem 0.85rem;
   }
 
+  .site-header.is-narrow-page .site-nav {
+    position: relative;
+    max-width: 34rem;
+    justify-content: space-between;
+  }
+
   .site-brand {
     display: inline-flex;
     align-items: center;
@@ -184,6 +299,31 @@ const quickNavLinks = [
     height: 3.125rem;
     color: var(--text-primary);
     text-decoration: none;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1rem;
+    font-style: italic;
+    font-weight: 600;
+    line-height: 1;
+    transition: transform 0.2s ease-out;
+  }
+
+  .site-brand:hover {
+    transform: translateY(-0.1rem);
+  }
+
+  .site-header.is-narrow-page .site-brand {
+    position: static;
+    width: auto;
+    height: 2.75rem;
+    transform: none;
+  }
+
+  .site-header.is-narrow-page .site-brand:hover {
+    transform: none;
+  }
+
+  .site-header.is-narrow-page .brand-logo {
+    width: 3.75rem;
   }
 
   .brand-logo {
@@ -209,7 +349,7 @@ const quickNavLinks = [
   .nav-actions {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0;
     flex: 0 0 auto;
   }
 
@@ -217,15 +357,33 @@ const quickNavLinks = [
     display: inline-flex;
   }
 
+  .header-search {
+    display: inline-grid;
+    place-items: center;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .header-search:hover {
+    color: var(--text-primary);
+  }
+  .header-search :global(svg) {
+    transition: transform 0.16s ease-out;
+  }
+  .header-search:active :global(svg) {
+    transform: scale(0.88);
+  }
+
   .quick-nav-toggle {
-    display: inline-flex;
+    display: inline-grid;
+    place-items: center;
     align-items: center;
     justify-content: center;
     width: 2rem;
     height: 2rem;
     padding: 0;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 0;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -237,25 +395,36 @@ const quickNavLinks = [
 
   .quick-nav-toggle:hover,
   .quick-nav-toggle[aria-expanded='true'] {
-    border-color: color-mix(in srgb, var(--border) 72%, var(--text-tertiary) 28%);
-    background-color: color-mix(in srgb, var(--selection) 88%, transparent);
     color: var(--text-primary);
   }
 
-  .quick-nav-icon {
+  .quick-nav-icon,
+  .page-rail-icon {
+    grid-area: 1 / 1;
     flex: 0 0 auto;
+    opacity: 1;
+    transform: rotate(0) scale(1);
+    transition:
+      opacity 0.18s ease-out,
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .quick-nav-icon-close {
-    display: none;
+  .quick-nav-icon-close,
+  .page-rail-icon-close {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.65);
   }
 
-  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-open {
-    display: none;
+  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-open,
+  .page-rail-toggle[aria-expanded='true'] .page-rail-icon-open {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.65);
   }
 
-  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-close {
-    display: block;
+  .quick-nav-toggle[aria-expanded='true'] .quick-nav-icon-close,
+  .page-rail-toggle[aria-expanded='true'] .page-rail-icon-close {
+    opacity: 1;
+    transform: rotate(0) scale(1);
   }
 
   .quick-nav-backdrop {
@@ -286,8 +455,8 @@ const quickNavLinks = [
     padding: max(1.15rem, env(safe-area-inset-top)) 0.8rem max(1.15rem, env(safe-area-inset-bottom))
       0.8rem;
     border-left: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-    border-radius: 8px 0 0 8px;
-    background-color: color-mix(in srgb, var(--bg) 94%, transparent);
+    border-radius: 0;
+    background-color: var(--bg);
     box-shadow: -0.85rem 0 2.8rem color-mix(in srgb, var(--text-primary) 15%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -301,11 +470,15 @@ const quickNavLinks = [
   .quick-nav-panel-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding: 0 0.25rem 0.75rem;
+    border-bottom: 1px dashed var(--divider-color);
     color: var(--text-tertiary);
+    font-family: var(--mono);
     font-size: 0.75rem;
     font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .quick-nav-close {
@@ -316,7 +489,7 @@ const quickNavLinks = [
     height: 1.85rem;
     padding: 0;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 0;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -335,18 +508,20 @@ const quickNavLinks = [
   .quick-nav-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 0.3rem;
+    gap: 0;
   }
 
   .quick-nav-link {
+    position: relative;
     display: grid;
-    grid-template-columns: 1.35rem minmax(0, 1fr);
+    grid-template-columns: 1.25rem minmax(0, 1fr);
     align-items: center;
-    gap: 0.55rem;
-    min-height: 3.35rem;
-    padding: 0.58rem 0.62rem;
-    border: 1px solid transparent;
-    border-radius: 8px;
+    gap: 0.7rem;
+    min-height: 3rem;
+    padding: 0.6rem 0.45rem 0.6rem 1rem;
+    border: 0;
+    border-bottom: 1px dashed var(--divider-color);
+    border-radius: 0;
     color: var(--text-primary);
     text-decoration: none;
     transition:
@@ -358,12 +533,41 @@ const quickNavLinks = [
   .quick-nav-link:hover,
   .quick-nav-link:focus-visible,
   .quick-nav-link.is-active {
-    border-color: color-mix(in srgb, var(--border) 76%, var(--text-tertiary) 24%);
-    background-color: color-mix(in srgb, var(--selection) 88%, transparent);
+    background-color: transparent;
+  }
+
+  .quick-nav-link.is-active {
+    color: var(--text-primary);
+  }
+
+  .quick-nav-link.is-active::before {
+    content: '';
+    position: absolute;
+    top: 0.62rem;
+    bottom: 0.62rem;
+    left: 0;
+    width: 2px;
+    background: var(--index-accent);
   }
 
   .quick-nav-link:hover {
     transform: translateX(-0.08rem);
+  }
+
+  .quick-nav-panel:not([hidden]) .quick-nav-link {
+    animation: quick-nav-item-in 0.24s ease-out both;
+    animation-delay: calc(var(--stagger-index, 0) * 0.035s);
+  }
+
+  @keyframes quick-nav-item-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .quick-nav-link-icon {
@@ -396,9 +600,15 @@ const quickNavLinks = [
   }
 
   .quick-nav-description {
+    display: none;
+  }
+
+  .quick-nav-link.is-external {
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  }
+
+  .quick-nav-external {
     color: var(--text-tertiary);
-    font-size: 0.75rem;
-    line-height: 1.25;
   }
 
   :global(html.quick-nav-open) {
@@ -439,23 +649,191 @@ const quickNavLinks = [
     }
   }
 
+  .quick-nav-backdrop.is-closing {
+    animation: quick-nav-fade-out 0.16s ease-in both;
+  }
+
+  .quick-nav-panel.is-closing {
+    animation: quick-nav-slide-out-side 0.18s ease-in both;
+  }
+
+  @keyframes quick-nav-fade-out {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes quick-nav-slide-out-side {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(1.2rem);
+    }
+  }
+
+  @keyframes quick-nav-slide-out-bottom {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(1.2rem);
+    }
+  }
+
   .site-nav :global(astro-theme-toggle) {
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     color: var(--text-secondary);
     display: inline-flex;
-    transition: color 0.15s ease-out;
+    transition:
+      color 0.15s ease-out,
+      transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .site-nav :global(astro-theme-toggle:hover) {
     color: var(--text-primary);
+    transform: scale(1.12) rotate(-6deg);
+  }
+
+  .site-nav :global(astro-theme-toggle:active) {
+    transform: scale(0.88);
+  }
+
+  .site-header.is-narrow-page .site-nav {
+    width: 100%;
+    max-width: 46rem;
+    min-height: 2.75rem;
+    padding: 0 0.25rem 0 1.25rem;
+    border: 0;
+    background: transparent;
+  }
+
+  .quick-nav {
+    position: static;
+  }
+
+  .quick-nav-toggle,
+  .page-rail-toggle,
+  .header-search {
+    box-sizing: border-box;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 0.85rem;
+  }
+
+  .page-rail-toggle {
+    display: inline-grid;
+    place-items: center;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  .page-rail-toggle:hover,
+  .page-rail-toggle[aria-expanded='true'] {
+    color: var(--text-primary);
+  }
+
+  :is(.quick-nav-toggle, .page-rail-toggle, .header-search):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .site-nav :global(astro-theme-toggle) {
+    box-sizing: border-box;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    background: transparent;
+  }
+
+  .site-nav :global(astro-theme-toggle:hover) {
+    transform: none;
+  }
+
+  .site-nav :global(astro-theme-toggle:focus-visible) {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .site-nav :is(.header-search, .quick-nav-toggle, .page-rail-toggle),
+  .site-nav :global(astro-theme-toggle),
+  .site-nav :global(astro-theme-toggle:hover) {
+    color: var(--header-icon-color);
+  }
+
+  .page-rail-toggle span {
+    display: none;
+  }
+
+  .site-nav :global(astro-theme-toggle:active) {
+    transform: none;
+  }
+
+  .site-nav :global(astro-theme-toggle > div) {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 0.16s ease-out;
+  }
+
+  .quick-nav-toggle:active .quick-nav-icon,
+  .page-rail-toggle:active :global(svg),
+  .site-nav :global(astro-theme-toggle:active > div) {
+    transform: scale(0.88);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-rail-icon,
+    .site-nav :global(astro-theme-toggle > div) {
+      transition: none;
+    }
+    .quick-nav-toggle:active .quick-nav-icon,
+    .page-rail-toggle:active :global(svg),
+    .site-nav :global(astro-theme-toggle:active > div) {
+      transform: none;
+    }
+  }
+
+  .quick-nav-panel,
+  .quick-nav-close {
+    border-radius: 1.25rem;
+  }
+
+  @media (max-width: 420px) {
+    .page-rail-toggle span {
+      display: none;
+    }
+    .page-rail-toggle {
+      padding: 0;
+    }
   }
 
   @media (max-width: 768px) {
     .site-header {
-      margin-top: -1.75rem;
-      margin-bottom: 1.75rem;
-      padding-top: 1.75rem;
+      padding-top: env(safe-area-inset-top);
     }
 
     .site-brand {
@@ -467,9 +845,18 @@ const quickNavLinks = [
       width: 4.5rem;
     }
 
+    .site-header.is-narrow-page .site-brand {
+      width: auto;
+      height: 2.75rem;
+    }
+
+    .site-header.is-narrow-page .brand-logo {
+      width: 3.75rem;
+    }
+
     .nav-actions {
       margin-left: auto;
-      gap: 0.55rem;
+      gap: 0;
     }
 
     .quick-nav-backdrop {
@@ -480,19 +867,33 @@ const quickNavLinks = [
       top: auto;
       left: 0;
       width: 100%;
-      max-height: min(28rem, calc(100dvh - 4.5rem));
-      padding: 0.7rem 1rem max(1rem, env(safe-area-inset-bottom));
+      max-height: min(31rem, calc(100vh - 4.5rem));
+      max-height: min(31rem, calc(100dvh - 4.5rem));
+      padding: 0.65rem 1rem max(1rem, env(safe-area-inset-bottom));
       overflow-y: auto;
+      overscroll-behavior-y: contain;
+      scrollbar-width: thin;
       border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
       border-left: 0;
-      border-radius: 14px 14px 0 0;
+      border-radius: 1.5rem 1.5rem 0 0;
       box-shadow: 0 -0.8rem 2.4rem color-mix(in srgb, var(--text-primary) 14%, transparent);
       animation-name: quick-nav-slide-in-bottom;
     }
 
+    .quick-nav-panel.is-closing {
+      animation-name: quick-nav-slide-out-bottom;
+    }
+
     .quick-nav-panel-head {
       position: relative;
-      padding-top: 0.55rem;
+      flex-shrink: 0;
+      padding: 0.55rem 0.25rem 0.65rem;
+      border-bottom: 0;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0;
     }
 
     .quick-nav-panel-head::before {
@@ -501,7 +902,7 @@ const quickNavLinks = [
       left: 50%;
       width: 2.4rem;
       height: 0.2rem;
-      border-radius: 999px;
+      border-radius: 1rem;
       background-color: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
       content: '';
       transform: translateX(-50%);
@@ -509,12 +910,51 @@ const quickNavLinks = [
 
     .quick-nav-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.35rem;
+      gap: 0.4rem 0.5rem;
     }
 
     .quick-nav-link {
-      min-height: 3.2rem;
-      padding: 0.5rem;
+      box-sizing: border-box;
+      min-width: 0;
+      min-height: 3.15rem;
+      padding: 0.7rem;
+      gap: 0.55rem;
+      border-bottom: 0;
+      border-radius: 0.75rem;
+    }
+
+    .quick-nav-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .quick-nav-link:is(:hover, :focus-visible, .is-active) {
+      background-color: color-mix(in srgb, var(--index-accent) 14%, transparent);
+      transform: none;
+    }
+
+    .quick-nav-link.is-active .quick-nav-label {
+      font-weight: 650;
+    }
+
+    .quick-nav-link.is-active::before {
+      top: 0.95rem;
+      bottom: 0.95rem;
+      border-radius: 1rem;
+    }
+
+    .quick-nav-link:nth-child(9),
+    .quick-nav-link:nth-child(10) {
+      margin-top: 0.65rem;
+    }
+
+    .quick-nav-panel:not([hidden]) .quick-nav-link {
+      animation: none;
+    }
+
+    .quick-nav-close {
+      width: 44px;
+      height: 44px;
     }
 
     .quick-nav-description {
@@ -522,19 +962,54 @@ const quickNavLinks = [
     }
   }
 
-  @media (max-width: 380px) {
-    .quick-nav-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
+    .header-search :global(svg) {
+      transition: none;
+    }
+    .header-search:active :global(svg) {
+      transform: none;
+    }
+    .site-header,
     .quick-nav-toggle,
     .quick-nav-backdrop,
     .quick-nav-close,
     .quick-nav-panel,
-    .quick-nav-link {
+    .quick-nav-link,
+    .quick-nav-icon,
+    .site-brand,
+    .site-nav :global(astro-theme-toggle) {
       animation: none;
+      transition: none;
+    }
+
+    .quick-nav-toggle:hover .quick-nav-icon-open,
+    .site-nav :global(astro-theme-toggle:hover),
+    .site-nav :global(astro-theme-toggle:active) {
+      transform: none;
+    }
+
+    .site-brand:hover {
+      transform: none;
+    }
+
+    .site-header.is-narrow-page .site-brand,
+    .site-header.is-narrow-page .site-brand:hover {
+      transform: translateX(-50%);
+    }
+  }
+
+  :global(html.highlights-mode-launching) {
+    overflow: hidden;
+  }
+
+  :global(html.highlights-mode-launching .layout-wrapper) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.highlights-mode-launching .layout-wrapper) {
       transition: none;
     }
   }
@@ -551,15 +1026,85 @@ const quickNavLinks = [
       if (!header || header.dataset.scrollStateBound === 'true') return
       header.dataset.scrollStateBound = 'true'
 
-      const syncScrolledState = () => {
-        header.classList.toggle('is-scrolled', window.scrollY > 12)
+      const TOP_THRESHOLD = 12
+      const HIDE_START = 72
+      const HIDE_DISTANCE = 24
+      const REVEAL_DISTANCE = 8
+      let previousScrollY = Math.max(0, window.scrollY)
+      let accumulatedDistance = 0
+      let scrollDirection = 0
+      let animationFrame = 0
+
+      const shouldStayVisible = () =>
+        document.documentElement.classList.contains('quick-nav-open') ||
+        header.matches(':focus-within')
+
+      const revealHeader = () => {
+        header.classList.remove('is-hidden')
+        accumulatedDistance = 0
+        scrollDirection = 0
       }
 
-      syncScrolledState()
-      window.addEventListener('scroll', syncScrolledState, { passive: true })
-      document.addEventListener('astro:before-swap', () => {
-        window.removeEventListener('scroll', syncScrolledState)
-      })
+      const updateHeader = () => {
+        animationFrame = 0
+
+        const currentScrollY = Math.max(0, window.scrollY)
+        const delta = currentScrollY - previousScrollY
+        header.classList.toggle('is-scrolled', currentScrollY > TOP_THRESHOLD)
+
+        if (currentScrollY <= TOP_THRESHOLD || shouldStayVisible()) {
+          revealHeader()
+          previousScrollY = currentScrollY
+          return
+        }
+
+        if (Math.abs(delta) < 1) {
+          previousScrollY = currentScrollY
+          return
+        }
+
+        const nextDirection = delta > 0 ? 1 : -1
+        if (nextDirection !== scrollDirection) {
+          scrollDirection = nextDirection
+          accumulatedDistance = 0
+        }
+
+        const directionDistance =
+          scrollDirection > 0 && previousScrollY < HIDE_START
+            ? Math.max(0, currentScrollY - HIDE_START)
+            : Math.abs(delta)
+        accumulatedDistance += directionDistance
+
+        if (
+          scrollDirection > 0 &&
+          currentScrollY > HIDE_START &&
+          accumulatedDistance >= HIDE_DISTANCE
+        ) {
+          header.classList.add('is-hidden')
+          accumulatedDistance = 0
+        } else if (scrollDirection < 0 && accumulatedDistance >= REVEAL_DISTANCE) {
+          revealHeader()
+        }
+
+        previousScrollY = currentScrollY
+      }
+
+      const requestHeaderUpdate = () => {
+        if (animationFrame) return
+        animationFrame = window.requestAnimationFrame(updateHeader)
+      }
+
+      const cleanup = () => {
+        window.removeEventListener('scroll', requestHeaderUpdate)
+        header.removeEventListener('focusin', revealHeader)
+        if (animationFrame) window.cancelAnimationFrame(animationFrame)
+        header.dataset.scrollStateBound = 'false'
+      }
+
+      updateHeader()
+      window.addEventListener('scroll', requestHeaderUpdate, { passive: true })
+      header.addEventListener('focusin', revealHeader)
+      document.addEventListener('astro:before-swap', cleanup, { once: true })
     }
 
     setupHeaderScrollState()
@@ -582,12 +1127,47 @@ const quickNavLinks = [
 
       root.dataset.quickNavBound = 'true'
 
+      const CLOSE_ANIMATION_MS = 200
+      let closeTimer = null
+
       const setOpen = (open) => {
         toggle.setAttribute('aria-expanded', String(open))
-        toggle.setAttribute('aria-label', open ? 'Close quick navigation' : 'Open quick navigation')
-        backdrop.hidden = !open
-        panel.hidden = !open
+        toggle.setAttribute('aria-label', open ? '关闭快速导航' : '打开快速导航')
         document.documentElement.classList.toggle('quick-nav-open', open)
+
+        if (open) document.querySelector('.site-header')?.classList.remove('is-hidden')
+
+        if (closeTimer) {
+          clearTimeout(closeTimer)
+          closeTimer = null
+        }
+
+        if (open) {
+          backdrop.classList.remove('is-closing')
+          panel.classList.remove('is-closing')
+          backdrop.hidden = false
+          panel.hidden = false
+          return
+        }
+
+        if (panel.hidden) return
+
+        const finishClose = () => {
+          backdrop.classList.remove('is-closing')
+          panel.classList.remove('is-closing')
+          backdrop.hidden = true
+          panel.hidden = true
+          closeTimer = null
+        }
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          finishClose()
+          return
+        }
+
+        backdrop.classList.add('is-closing')
+        panel.classList.add('is-closing')
+        closeTimer = setTimeout(finishClose, CLOSE_ANIMATION_MS)
       }
 
       const isOpen = () => toggle.getAttribute('aria-expanded') === 'true'
@@ -641,14 +1221,101 @@ const quickNavLinks = [
       document.addEventListener('astro:before-swap', cleanup, { once: true })
     }
 
+    function setupHighlightsLaunchTransition() {
+      const links = document.querySelectorAll('[data-highlights-launch="true"]')
+      if (!links.length) return
+
+      const STORAGE_KEY = 'abo-highlights-mode-transition'
+      const TRANSITION_OUT_MS = 180
+      let navigationTimer = 0
+      let launching = false
+
+      const resetTransition = () => {
+        if (navigationTimer) window.clearTimeout(navigationTimer)
+        navigationTimer = 0
+        launching = false
+        document.documentElement.classList.remove('highlights-mode-launching')
+      }
+
+      const handleHighlightsClick = (event) => {
+        if (
+          launching ||
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        )
+          return
+
+        const link = event.currentTarget
+        if (
+          !(link instanceof HTMLAnchorElement) ||
+          link.download ||
+          (link.target && link.target !== '_self')
+        )
+          return
+
+        const destination = new URL(link.href, window.location.href)
+        const normalizedPath = destination.pathname.replace(/\/+$/, '') || '/'
+        if (destination.origin !== window.location.origin || normalizedPath !== '/highlights')
+          return
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+        event.preventDefault()
+        launching = true
+
+        try {
+          window.sessionStorage.setItem(STORAGE_KEY, 'pending')
+        } catch {
+          // The launch animation can still run when storage is unavailable.
+        }
+
+        document.documentElement.classList.remove('quick-nav-open')
+        document.documentElement.classList.add('highlights-mode-launching')
+
+        navigationTimer = window.setTimeout(() => {
+          window.location.assign(destination.href)
+        }, TRANSITION_OUT_MS)
+      }
+
+      const boundLinks = []
+      links.forEach((link) => {
+        if (!(link instanceof HTMLAnchorElement) || link.dataset.highlightsLaunchBound === 'true')
+          return
+
+        link.dataset.highlightsLaunchBound = 'true'
+        link.addEventListener('click', handleHighlightsClick)
+        boundLinks.push(link)
+      })
+      if (!boundLinks.length) return
+
+      const cleanup = () => {
+        resetTransition()
+        window.removeEventListener('pageshow', resetTransition)
+        boundLinks.forEach((link) => {
+          link.removeEventListener('click', handleHighlightsClick)
+          link.dataset.highlightsLaunchBound = 'false'
+        })
+      }
+
+      window.addEventListener('pageshow', resetTransition)
+      document.addEventListener('astro:before-swap', cleanup, { once: true })
+    }
+
     window.__setupHeaderScrollState = setupHeaderScrollState
     window.__setupQuickNav = setupQuickNav
+    window.__setupHighlightsLaunchTransition = setupHighlightsLaunchTransition
+    setupHeaderScrollState()
     setupQuickNav()
+    setupHighlightsLaunchTransition()
 
     if (!state.installed) {
       state.installed = true
       document.addEventListener('astro:page-load', setupHeaderScrollState)
       document.addEventListener('astro:page-load', setupQuickNav)
+      document.addEventListener('astro:page-load', setupHighlightsLaunchTransition)
     }
   })()
 </script>

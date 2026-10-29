@@ -1,10 +1,12 @@
 export const primaryNavLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/categories', label: 'Categories' },
-  { href: '/now', label: 'Now' },
-  { href: '/nav', label: 'Bookmarks' },
-  { href: '/newsletter', label: 'Newsletter' },
-  { href: '/para-notes', label: 'Notes' }
+  { href: '/blog/', label: '主页' },
+  { href: '/categories/', label: '分类' },
+  { href: '/now/', label: '现在' },
+  { href: '/highlights/', label: '高光' },
+  { href: '/nav/', label: '书签' },
+  { href: '/friends/', label: '友链' },
+  { href: '/newsletter/', label: '订阅' },
+  { href: '/para-notes/', label: '笔记' }
 ]
 
 export function getNextNavLink(pathname: string) {

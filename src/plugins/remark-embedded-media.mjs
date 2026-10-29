@@ -157,7 +157,8 @@ const embedHandlers = {
       .toLowerCase()
 
     let id = rawId
-    let type = rawType === 'playlist' || rawType === 'list' ? 'playlist' : rawType === 'song' ? 'song' : ''
+    let type =
+      rawType === 'playlist' || rawType === 'list' ? 'playlist' : rawType === 'song' ? 'song' : ''
 
     if (url) {
       const decodedUrl = decodeURIComponent(url)
@@ -198,7 +199,8 @@ const embedHandlers = {
         ? `https://music.163.com/#/playlist?id=${normalizedId}`
         : `https://music.163.com/#/song?id=${normalizedId}`
     const audioUrl = `https://music.163.com/song/media/outer/url?id=${normalizedId}.mp3`
-    const title = finalType === 'playlist' ? 'NetEase Cloud Music playlist' : 'NetEase Cloud Music song'
+    const title =
+      finalType === 'playlist' ? 'NetEase Cloud Music playlist' : 'NetEase Cloud Music song'
 
     if (finalType === 'song') {
       return `

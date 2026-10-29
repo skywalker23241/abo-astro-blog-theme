@@ -8,13 +8,22 @@ export default function remarkTOC() {
 
     // Extract headings from AST
     visit(tree, 'heading', (node) => {
+      const wasTopLevelHeading = node.depth === 1
+
+      // PostLayout already renders the post title as the document's single h1.
+      // Treat h1s authored in Markdown/MDX as section headings so older posts
+      // retain their visual hierarchy without producing multiple h1 elements.
+      if (wasTopLevelHeading) {
+        node.depth = 2
+      }
+
       const level = node.depth
 
       // Only process h1, h2, h3
       if (level > 3) return
 
       // Skip the first h1
-      if (level === 1 && headingIndex === 0) {
+      if (wasTopLevelHeading && headingIndex === 0) {
         headingIndex++
         return
       }

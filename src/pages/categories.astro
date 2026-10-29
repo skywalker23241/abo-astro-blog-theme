@@ -1,11 +1,15 @@
 ---
+import { themeConfig } from '@/config'
 import IndexLayout from '@/layouts/IndexLayout.astro'
+import InlineHint from '@/components/ui/InlineHint.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
 import FormattedDate from '@/components/widgets/FormattedDate.astro'
+import ArrowRight from 'phosphor-astro/ArrowRight.astro'
 import { getSortedFilteredPosts } from '@/utils/draft'
 import { getCategoryFromTitle, stripCategoryPrefix } from '@/utils/category'
 
-const pageTitle = '分类'
-const pageDescription = '按文章标题前缀自动聚合的分类页'
+const pageTitle = '分类与搜索'
+const pageDescription = '全文搜索博客文章，或按标题前缀浏览分类'
 const posts = await getSortedFilteredPosts()
 
 const categoryMap = new Map<string, typeof posts>()
@@ -18,201 +22,732 @@ for (const post of posts) {
 const categories = [...categoryMap.entries()].sort((a, b) => b[1].length - a[1].length)
 const totalPosts = posts.length
 const totalCategories = categories.length
+const indexedCategories = categories.map(([name, postsInCategory], index) => {
+  const label = String(index + 1).padStart(2, '0')
+
+  return {
+    id: `topic-${label}`,
+    label,
+    name,
+    posts: postsInCategory
+  }
+})
 ---
 
-<IndexLayout title={pageTitle} description={pageDescription}>
-  <section class="categories-page">
-    <header class="categories-header">
-      <h1>分类</h1>
-      <p>
-        <span>{totalCategories} 个分类</span>
-        <span>{totalPosts} 篇文章</span>
-      </p>
-    </header>
-    <ul class="category-tabs">
-      {
-        categories.map(([name, postsInCategory]) => (
-          <li>
-            <a href={`#cat-${encodeURIComponent(name)}`}>
-              <span>{name}</span>
-              <span class="count">{postsInCategory.length}</span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+<IndexLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`分类 · ${themeConfig.site.title}`}
+>
+  <section class="categories-page" id="topic-index">
+    <MinimalPageHeader
+      meta={`${String(totalCategories).padStart(2, '0')} / ${totalPosts}`}
+      title="分类"
+      suffix="搜索"
+      metaLabel={`${totalCategories} 个分类，${totalPosts} 篇文章`}
+    />
+
+    <section class="index-block search-section" aria-labelledby="search-heading">
+      <div class="index-marker" aria-hidden="true">02</div>
+      <div class="index-content search-content">
+        <h2 id="search-heading" class="sr-only">全文搜索</h2>
+        <div
+          id="search"
+          class="search-widget"
+          data-search-placeholder={`搜索 ${totalPosts} 篇文章…`}
+        >
+        </div>
+        <p class="search-fallback" data-search-fallback hidden>
+          <InlineHint>搜索暂不可用。</InlineHint>
+        </p>
+        <noscript
+          ><p class="search-fallback"><InlineHint>需要 JavaScript。</InlineHint></p></noscript
+        >
+      </div>
+    </section>
+
+    <nav
+      class="index-block category-directory mobile-category-directory"
+      aria-labelledby="browse-heading"
+    >
+      <div class="index-marker directory-marker" aria-hidden="true">#</div>
+      <div class="index-content directory-content">
+        <h2 id="browse-heading" class="sr-only">主题目录</h2>
+        <ol class="directory-list">
+          {
+            indexedCategories.map((category) => (
+              <li>
+                <a
+                  href={`#${category.id}`}
+                  aria-label={`${category.name}，${category.posts.length} 篇文章`}
+                >
+                  <span class="directory-number">{category.label}</span>
+                  <span class="directory-name">{category.name}</span>
+                  <span class="directory-count">{category.posts.length}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </nav>
 
     <div class="category-list">
       {
-        categories.map(([name, postsInCategory]) => (
-          <section id={`cat-${encodeURIComponent(name)}`} class="category-section">
-            <h2>{name}</h2>
-            <ul class="post-list">
-              {postsInCategory.map((post) => (
-                <li>
-                  <a href={`/${post.id}/`} class="post-link">
-                    <time class="post-date" datetime={post.data.pubDate.toISOString()}>
-                      <FormattedDate date={post.data.pubDate} format="YYYY-MM-DD" context="list" />
-                    </time>
-                    <span class="post-title">
-                      {post.data.displayTitle ||
-                        stripCategoryPrefix(post.data.title) ||
-                        post.data.title}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+        indexedCategories.map((category) => (
+          <section id={category.id} class="category-section">
+            <div class="index-marker category-marker" aria-hidden="true">
+              {category.label}
+            </div>
+            <div class="category-content glass-card">
+              <header class="category-heading">
+                <h2>{category.name}</h2>
+                <span aria-label={`${category.posts.length} 篇文章`}>
+                  {String(category.posts.length).padStart(2, '0')}
+                </span>
+              </header>
+              <ul class="post-list">
+                {category.posts.map((post) => (
+                  <li>
+                    <a href={`/${post.id}/`} class="post-link" data-astro-prefetch="viewport">
+                      <span class="post-date">
+                        <FormattedDate
+                          date={post.data.pubDate}
+                          format="YYYY-MM-DD"
+                          context="list"
+                        />
+                      </span>
+                      <span class="post-title">
+                        {post.data.displayTitle ||
+                          stripCategoryPrefix(post.data.title) ||
+                          post.data.title}
+                      </span>
+                      <span class="post-arrow" aria-hidden="true">
+                        <ArrowRight width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         ))
       }
     </div>
   </section>
+
+  <nav
+    class="section-rail rail-category-directory"
+    aria-labelledby="rail-browse-heading"
+    slot="rail"
+  >
+    <p class="rail-directory-label">分类</p>
+    <h2 id="rail-browse-heading" class="sr-only">主题目录</h2>
+    <ol>
+      {
+        indexedCategories.map((category) => (
+          <li>
+            <a
+              href={`#${category.id}`}
+              aria-label={`${category.name}，${category.posts.length} 篇文章`}
+            >
+              <span>{category.name}</span>
+              <span class="rail-directory-count">
+                {String(category.posts.length).padStart(2, '0')}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
 </IndexLayout>
 
+<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+
 <style>
-  .categories-header {
-    margin-bottom: 1.2rem;
+  .categories-page {
+    width: 100%;
+    max-width: 34rem;
+    margin: 0 auto;
+    padding: 1.8rem 0 1rem;
   }
 
-  .categories-header h1 {
-    margin: 0 0 0.35rem;
-    font-size: 1.75rem;
+  .index-block,
+  .category-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
-  .categories-header p {
-    display: flex;
-    gap: 0.8rem;
-    margin: 0;
+  .index-block {
+    margin-bottom: 3.75rem;
+  }
+
+  .index-marker {
+    display: none;
+  }
+
+  .index-content,
+  .category-content {
+    min-width: 0;
+  }
+
+  .search-fallback {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  .search-widget {
+    scroll-margin-top: 4rem;
+    --pagefind-ui-scale: 1;
+    --pagefind-ui-primary: var(--text-primary);
+    --pagefind-ui-text: var(--text-primary);
+    --pagefind-ui-background: var(--bg);
+    --pagefind-ui-border: var(--border);
+    --pagefind-ui-tag: var(--code-bg);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: 14px;
+    --pagefind-ui-image-border-radius: 0;
+    --pagefind-ui-font: inherit;
+  }
+
+  .search-widget :global(.pagefind-ui__form) {
+    position: relative;
+  }
+
+  .search-widget :global(.pagefind-ui__form::before) {
+    display: none;
+  }
+
+  .search-widget :global(.pagefind-ui__search-input) {
+    height: auto;
+    padding: 0.9rem 4rem 0.9rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    background-color: var(--glass-surface);
+    background-image: none;
+    color: var(--text-primary);
+    font-size: 1.15rem;
+    font-weight: 520;
+    letter-spacing: -0.015em;
+    line-height: 1.5;
+    transition:
+      border-color 0.16s ease-out,
+      box-shadow 0.16s ease-out;
+  }
+
+  .search-widget :global(.pagefind-ui__search-input::placeholder) {
+    color: var(--text-tertiary);
+    opacity: 0.82;
+  }
+
+  .search-widget :global(.pagefind-ui__search-input:focus) {
+    border-color: var(--index-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-soft, var(--link-hover-bg));
+  }
+
+  .search-widget :global(.pagefind-ui__search-clear) {
+    top: 0.7rem;
+    right: 0.6rem;
+    height: 2rem;
+    width: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: var(--text-tertiary);
     font-family: var(--mono);
-    font-size: 0.78rem;
+    font-size: 0.65rem;
+    transform: none;
   }
 
-  .category-tabs {
-    margin: 0 0 2rem;
+  .search-widget :global(.pagefind-ui__drawer) {
+    margin-top: 1rem;
+  }
+
+  .search-widget :global(.pagefind-ui__message) {
     padding: 0;
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.68rem;
   }
 
-  .category-tabs a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.3rem 0.65rem;
-    border: none;
-    border-radius: 999px;
-    background-color: var(--selection);
+  #search :global(.pagefind-ui__result) {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    background: var(--glass-surface);
+    box-shadow: var(--glass-highlight);
+  }
+
+  #search :global(.pagefind-ui__result-inner) {
+    margin: 0;
+  }
+
+  #search :global(.pagefind-ui__result-title) {
+    margin: 0;
+  }
+
+  #search :global(.pagefind-ui__result-link) {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 560;
+    line-height: 1.45;
     text-decoration: none;
+  }
+
+  #search :global(.pagefind-ui__result-excerpt) {
+    display: none !important;
+  }
+
+  #search :global(.pagefind-ui__result-nested) {
+    display: none !important;
+  }
+
+  #search :global(.pagefind-ui__result-excerpt mark) {
+    border-radius: 0;
+    background: color-mix(in srgb, var(--index-accent) 38%, transparent);
+    color: var(--text-primary);
+  }
+
+  .search-widget :global(.pagefind-ui__button) {
+    width: auto;
+    margin: 1rem auto 0 0;
+    padding: 0.4rem 0;
+    border: 0;
+    background: transparent;
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+
+  .directory-marker {
+    color: color-mix(in srgb, var(--index-accent) 42%, var(--bg));
+    letter-spacing: -0.04em;
+  }
+
+  .directory-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    gap: 0.6rem;
+    list-style: none;
+  }
+
+  .directory-list li {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .directory-list a {
+    display: grid;
+    grid-template-columns: 1.65rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 3rem;
+    padding: 0.65rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.85rem;
+    background: var(--glass-surface);
+    color: var(--text-primary);
+    text-decoration: none;
     transition:
       color 0.15s ease-out,
-      background-color 0.15s ease-out,
-      transform 0.15s ease-out;
+      padding 0.15s ease-out;
   }
 
-  .category-tabs a:hover {
-    color: var(--text-primary);
-    background-color: color-mix(in srgb, var(--selection) 80%, transparent);
-    transform: translateY(-0.08rem);
+  .directory-list li:nth-child(even) a {
+    padding-left: 0.65rem;
   }
 
-  .count {
-    opacity: 0.75;
+  .directory-list a:hover,
+  .directory-list a:focus-visible {
+    color: var(--text-secondary);
+    background: var(--glass-surface-strong);
+  }
+
+  .directory-list li:nth-child(even) a:hover,
+  .directory-list li:nth-child(even) a:focus-visible {
+    padding-left: 0.65rem;
+  }
+
+  .directory-number,
+  .directory-count {
+    color: var(--text-tertiary);
     font-family: var(--mono);
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .directory-name {
+    min-width: 0;
+    font-size: 0.92rem;
+    font-weight: 540;
+  }
+
+  .directory-count {
+    min-width: 1rem;
+    color: var(--text-tertiary);
+    text-align: right;
+  }
+
+  .directory-list a:hover .directory-count,
+  .directory-list a:focus-visible .directory-count {
+    color: var(--index-accent);
+  }
+
+  .rail-category-directory {
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--divider-color);
+  }
+
+  .rail-directory-label {
+    margin: 0 0 0.75rem;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .rail-category-directory ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rail-category-directory li {
+    margin: 0;
+    border-bottom: 1px dashed var(--divider-color);
+  }
+
+  .rail-category-directory a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.55rem 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    text-decoration: none;
+    transition:
+      color 0.15s ease-out,
+      padding 0.15s ease-out;
+  }
+
+  .rail-category-directory a:hover,
+  .rail-category-directory a:focus-visible {
+    padding-left: 0.15rem;
+    color: var(--text-primary);
+  }
+
+  .rail-directory-count {
+    flex: 0 0 auto;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .category-list {
     display: flex;
     flex-direction: column;
-    gap: 1.6rem;
+    gap: 1.25rem;
   }
 
   .category-section {
     scroll-margin-top: 7rem;
   }
 
-  .category-section h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
-    color: var(--text-secondary);
+  .category-content {
+    min-width: 0;
+  }
+
+  .category-heading {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.65rem;
+    padding: 0.2rem 0 0.65rem;
+  }
+
+  .category-heading h2 {
+    margin: 0;
+    font-size: 1.24rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .category-heading > span {
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .post-list {
+    display: grid;
+    gap: 0.4rem;
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
   .post-link {
-    display: flex;
+    display: grid;
+    grid-template-columns: 5.45rem minmax(0, 1fr) 0.8rem;
     align-items: baseline;
-    gap: 0.8rem;
-    text-decoration: none;
+    gap: 0.85rem;
+    min-height: 2.75rem;
+    box-sizing: border-box;
+    padding: 0.65rem;
+    border-radius: 0.7rem;
+    background: var(--glass-surface-muted);
     color: var(--text-primary);
-    padding: 0.14rem 0.35rem;
-    border-radius: 6px;
+    text-decoration: none;
     transition:
-      background-color 0.15s ease-out,
-      transform 0.15s ease-out;
+      color 0.15s ease-out,
+      padding 0.15s ease-out;
   }
 
-  .post-link:hover {
-    background-color: color-mix(in srgb, var(--selection) 82%, transparent);
-    transform: translateX(0.12rem);
+  .post-link:hover,
+  .post-link:focus-visible {
+    background: var(--glass-surface-strong);
+    color: var(--text-secondary);
   }
 
-  .post-link:hover .post-title {
+  .post-link:hover .post-title,
+  .post-link:focus-visible .post-title {
     color: var(--text-primary);
   }
 
   .post-date {
-    flex-shrink: 0;
-    min-width: 5.4rem;
     color: var(--text-tertiary);
-    font-size: 0.72rem;
     font-family: var(--mono);
+    font-size: 0.68rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .post-date :global(time) {
+    white-space: nowrap;
   }
 
   .post-title {
     min-width: 0;
-    font-size: 0.84rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    width: fit-content;
+    max-width: 100%;
+    font-size: 0.98rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .post-arrow {
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    transition:
+      color 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+
+  .post-link:hover .post-arrow,
+  .post-link:focus-visible .post-arrow {
+    color: var(--index-accent);
+    transform: translateX(0.12rem);
+  }
+
+  .categories-page.is-searching .category-directory,
+  .categories-page.is-searching .category-list {
+    display: none;
+  }
+
+  @media (min-width: 1180px) {
+    .mobile-category-directory {
+      display: none;
+    }
   }
 
   @media (max-width: 520px) {
+    .categories-page {
+      padding-top: 0.75rem;
+    }
+
+    .index-block,
+    .category-section {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .index-block {
+      margin-bottom: 3.25rem;
+    }
+
+    .search-widget :global(.pagefind-ui__search-input) {
+      padding-top: 0.72rem;
+      padding-bottom: 0.72rem;
+      font-size: 1.02rem;
+    }
+
+    .directory-list a {
+      grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+      gap: 0.32rem;
+      min-height: 2.75rem;
+      padding-right: 0.45rem;
+    }
+
+    .directory-list li:nth-child(even) a {
+      padding-left: 0.45rem;
+    }
+
+    .directory-list li:nth-child(even) a:hover,
+    .directory-list li:nth-child(even) a:focus-visible {
+      padding-left: 0.58rem;
+    }
+
+    .directory-name {
+      font-size: 0.84rem;
+    }
+
+    .directory-count {
+      min-width: 0.8rem;
+    }
+
+    .category-list {
+      gap: 1.25rem;
+    }
+
     .category-section {
       scroll-margin-top: 6rem;
     }
 
-    .categories-header p {
-      flex-wrap: wrap;
-      gap: 0.45rem 0.8rem;
+    .category-content {
+      padding: var(--card-padding, 1.15rem);
     }
 
     .post-link {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.05rem;
-      padding-top: 0.28rem;
-      padding-bottom: 0.28rem;
+      grid-template-columns: minmax(0, 1fr) 0.75rem;
+      gap: 0.1rem 0.65rem;
+      min-height: 3.45rem;
+      padding: 0.65rem;
     }
 
     .post-date {
-      min-width: 0;
-      font-size: 0.68rem;
+      grid-column: 1 / -1;
+      font-size: 0.62rem;
     }
 
     .post-title {
-      max-width: 100%;
-      white-space: normal;
-      line-height: 1.45;
+      grid-column: 1;
+      font-size: 0.93rem;
+    }
+
+    .post-arrow {
+      grid-column: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .directory-list a,
+    .post-link,
+    .post-title,
+    .post-arrow,
+    .search-widget :global(.pagefind-ui__search-input) {
+      transition: none;
     }
   }
 </style>
+
+<script is:inline>
+  ;(function () {
+    const state = (window.__categorySearchState ||= {
+      installed: false,
+      loading: false
+    })
+
+    function showFallback() {
+      const fallback = document.querySelector('[data-search-fallback]')
+      if (fallback) fallback.hidden = false
+    }
+
+    function mountSearchUI() {
+      const container = document.querySelector('#search')
+      if (!container || container.dataset.searchInit === '1') return
+      if (typeof window.PagefindUI !== 'function') return
+
+      container.dataset.searchInit = '1'
+      new window.PagefindUI({
+        element: '#search',
+        showSubResults: false,
+        showImages: false,
+        autofocus: false,
+        translations: {
+          placeholder: container.dataset.searchPlaceholder || '输入关键词搜索文章…',
+          clear_search: '清除',
+          load_more: '加载更多',
+          search_label: '站内搜索',
+          filters_label: '筛选',
+          zero_results: '没有找到 [SEARCH_TERM] 的相关内容',
+          many_results: '找到 [COUNT] 条与 [SEARCH_TERM] 相关的内容',
+          one_result: '找到 1 条与 [SEARCH_TERM] 相关的内容',
+          alt_search: '没有找到 [SEARCH_TERM]，显示 [DIFFERENT_TERM] 的结果',
+          search_suggestion: '没有找到 [SEARCH_TERM]，可以尝试以下搜索：',
+          searching: '正在搜索 [SEARCH_TERM]…'
+        }
+      })
+
+      const input = container.querySelector('input')
+      if (window.location.hash === '#search') input?.focus({ preventScroll: true })
+      const page = container.closest('.categories-page')
+      const syncSearchState = () => {
+        page?.classList.toggle('is-searching', Boolean(input?.value.trim()))
+      }
+      input?.addEventListener('input', syncSearchState)
+      container.addEventListener('click', (event) => {
+        if (event.target instanceof Element && event.target.closest('.pagefind-ui__search-clear')) {
+          requestAnimationFrame(syncSearchState)
+        }
+      })
+      syncSearchState()
+    }
+
+    function initCategorySearch() {
+      const container = document.querySelector('#search')
+      if (!container) return
+
+      if (typeof window.PagefindUI === 'function') {
+        mountSearchUI()
+        return
+      }
+      if (state.loading) return
+      state.loading = true
+
+      const script = document.createElement('script')
+      script.src = '/pagefind/pagefind-ui.js'
+      script.onload = () => {
+        state.loading = false
+        mountSearchUI()
+      }
+      script.onerror = () => {
+        state.loading = false
+        showFallback()
+      }
+      document.head.appendChild(script)
+    }
+
+    if (document.readyState !== 'loading') initCategorySearch()
+    else document.addEventListener('DOMContentLoaded', initCategorySearch, { once: true })
+
+    if (!state.installed) {
+      state.installed = true
+      document.addEventListener('astro:page-load', initCategorySearch)
+    }
+  })()
+</script>

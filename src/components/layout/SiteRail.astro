@@ -1,0 +1,577 @@
+---
+import { themeConfig } from '@/config'
+import type { TOCItem } from '@/types'
+import { stripCategoryPrefix } from '@/utils/category'
+import type { RelatedPost } from '@/utils/related'
+import X from 'phosphor-astro/X.astro'
+import ArrowLeft from 'phosphor-astro/ArrowLeft.astro'
+
+interface Props {
+  title?: string
+  description?: string
+  toc?: TOCItem[]
+  readingTime?: string
+  recommendedPosts?: RelatedPost[]
+  isPost?: boolean
+}
+
+const {
+  title = themeConfig.site.title,
+  description = '技术、工具与生活记录。',
+  toc = [],
+  readingTime,
+  recommendedPosts = [],
+  isPost = false
+} = Astro.props
+const visibleToc = toc.filter((item) => item.level <= 3)
+const hasCustomContent = Astro.slots.has('default')
+const railTitle = stripCategoryPrefix(title)
+const railDescription = description?.split(/(?<=[。！？.!?])\s*/u)[0] || description
+---
+
+<aside class="site-rail" aria-label="页面辅助信息">
+  <div class="rail-sticky">
+    {
+      hasCustomContent ? (
+        <slot />
+      ) : (
+        <>
+          <section class="rail-section">
+            <p class="rail-label">当前页面</p>
+            <h2>{railTitle}</h2>
+            <p class="rail-description">{railDescription}</p>
+            {readingTime && <p class="rail-reading">{readingTime}</p>}
+          </section>
+
+          {visibleToc.length > 0 && (
+            <nav class="rail-section rail-toc" aria-label="文章目录">
+              <p class="rail-label">目录</p>
+              <ol>
+                {visibleToc.map((item) => (
+                  <li class:list={[`level-${item.level}`]}>
+                    <a href={`#${item.id}`}>{item.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          {recommendedPosts.length > 0 && (
+            <nav class="rail-section rail-recommended" aria-label="推荐文章">
+              <p class="rail-label">推荐文章</p>
+              <ol>
+                {recommendedPosts.map((post) => (
+                  <li>
+                    <a href={`/${post.id}/`} data-astro-prefetch="viewport">
+                      {post.displayTitle || stripCategoryPrefix(post.title)}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          <section class="rail-section rail-comments" aria-labelledby="rail-comments-title">
+            <p id="rail-comments-title" class="rail-label">
+              评论
+            </p>
+            <a href="#giscus-container">评论区</a>
+          </section>
+        </>
+      )
+    }
+    {
+      isPost ? (
+        <div class="post-index-dock">
+          <a class="post-back-index" href="/blog/" aria-label="返回文章列表" title="返回文章列表">
+            <ArrowLeft width="1rem" height="1rem" aria-hidden="true" />
+            <span class="sr-only">返回文章列表</span>
+          </a>
+        </div>
+      ) : (
+        <div class="back-to-top-dock" data-back-to-top-dock />
+      )
+    }
+  </div>
+  <dialog class="mobile-rail-dialog" id="mobile-page-rail" aria-label="页面目录">
+    <header class="mobile-rail-head">
+      <button type="button" data-close-page-rail aria-label="关闭页面目录">
+        <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+      </button>
+    </header>
+    <div class="mobile-rail-content" data-mobile-rail-content></div>
+  </dialog>
+</aside>
+
+<script>
+  import '@/scripts/mobile-page-rail'
+</script>
+
+<style>
+  .post-index-dock {
+    display: flex;
+    justify-content: center;
+  }
+
+  .post-back-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    box-sizing: border-box;
+    padding: 0;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 50%;
+    background: var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    line-height: 1.5;
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .post-back-index :global(svg) {
+    flex-shrink: 0;
+    color: var(--index-accent);
+  }
+
+  .post-back-index:hover {
+    border-color: color-mix(in srgb, var(--index-accent) 40%, var(--glass-border-muted));
+    background-color: var(--glass-surface-strong);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-primary);
+  }
+
+  .post-back-index:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-back-index {
+      transition: none;
+    }
+  }
+
+  .site-rail {
+    display: block;
+    min-width: 0;
+  }
+
+  .mobile-rail-dialog:not([open]) {
+    display: none;
+  }
+  .mobile-rail-dialog {
+    box-sizing: border-box;
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(21rem, calc(100% - 2rem));
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    border: 0;
+    border-left: 1px solid var(--glass-border-muted);
+    border-radius: 0;
+    background: var(--bg);
+    box-shadow: -0.85rem 0 2.8rem color-mix(in srgb, var(--text-primary) 15%, transparent);
+    color: var(--text-primary);
+    overscroll-behavior: contain;
+    animation: rail-slide-in-side 0.18s ease-out both;
+  }
+  .mobile-rail-dialog::backdrop {
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    animation: rail-backdrop-in 0.16s ease-out both;
+  }
+  .mobile-rail-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: flex-end;
+    height: 0;
+    padding: 0;
+  }
+  .mobile-rail-head button {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .mobile-rail-head button:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+  .mobile-rail-head button:hover {
+    color: var(--text-primary);
+  }
+  .mobile-rail-content {
+    padding: 1.25rem;
+  }
+
+  .mobile-rail-content :global(h2),
+  .mobile-rail-content :global(.bookmark-directory-label),
+  .mobile-rail-content :global(.memo-directory-label),
+  .mobile-rail-content .rail-label {
+    padding-right: 2.5rem;
+  }
+
+  .mobile-rail-dialog.is-closing {
+    animation: rail-slide-out-side 0.18s ease-in both;
+  }
+  .mobile-rail-dialog.is-closing::backdrop {
+    animation: rail-backdrop-out 0.16s ease-in both;
+  }
+  @keyframes rail-slide-in-side {
+    from {
+      opacity: 0;
+      transform: translateX(1.2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes rail-slide-out-side {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(1.2rem);
+    }
+  }
+  @keyframes rail-slide-in-bottom {
+    from {
+      opacity: 0;
+      transform: translateY(1.2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes rail-slide-out-bottom {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(1.2rem);
+    }
+  }
+  @keyframes rail-backdrop-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes rail-backdrop-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .mobile-rail-dialog {
+      inset: auto 0 0;
+      width: 100%;
+      height: auto;
+      max-height: min(28rem, calc(100dvh - 4.5rem));
+      border-left: 0;
+      border-top: 1px solid var(--glass-border-muted);
+      border-radius: 1.5rem 1.5rem 0 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      animation-name: rail-slide-in-bottom;
+    }
+    .mobile-rail-dialog.is-closing {
+      animation-name: rail-slide-out-bottom;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-rail-dialog,
+    .mobile-rail-dialog::backdrop,
+    .mobile-rail-dialog.is-closing,
+    .mobile-rail-dialog.is-closing::backdrop {
+      animation: none;
+    }
+  }
+
+  .rail-sticky {
+    position: sticky;
+    top: 2.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: var(--rail-start-offset, 7rem);
+  }
+
+  .back-to-top-dock {
+    display: flex;
+    justify-content: center;
+    min-height: 2.75rem;
+  }
+
+  :global(.section-rail) {
+    max-height: calc(100vh - 12rem);
+    padding-right: 0.3rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  :global(.section-rail::-webkit-scrollbar) {
+    display: none;
+  }
+
+  :global(.section-rail),
+  :global(.rail-links) {
+    padding: 1rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen-soft), transparent 44%), var(--glass-surface-muted);
+    box-shadow: var(--glass-highlight-muted), var(--glass-shadow-muted);
+    backdrop-filter: blur(18px) saturate(112%);
+    -webkit-backdrop-filter: blur(18px) saturate(112%);
+  }
+
+  .rail-section {
+    padding: 1rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen-soft), transparent 44%), var(--glass-surface-muted);
+    box-shadow: var(--glass-highlight-muted), var(--glass-shadow-muted);
+    backdrop-filter: blur(18px) saturate(112%);
+    -webkit-backdrop-filter: blur(18px) saturate(112%);
+  }
+
+  .rail-label {
+    margin: 0 0 0.75rem;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.45;
+  }
+
+  .rail-description {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0.55rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+  }
+
+  .rail-reading {
+    margin: 0.7rem 0 0;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+  }
+
+  .rail-toc ol {
+    display: flex;
+    max-height: 42vh;
+    flex-direction: column;
+    gap: 0.48rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    list-style: none;
+  }
+
+  .rail-toc ol::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rail-toc li {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .rail-toc li.level-3 {
+    padding-left: 0.65rem;
+  }
+
+  .rail-toc a {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1.5;
+    text-decoration: none;
+    transition:
+      color 0.15s ease-out,
+      background-position var(--link-fill-duration) var(--link-fill-ease);
+  }
+
+  .rail-toc a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rail-toc a:hover,
+  .rail-toc a:focus-visible {
+    color: var(--text-primary);
+  }
+
+  .rail-recommended ol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.48rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rail-recommended li {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .rail-recommended a,
+  .rail-comments a {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .rail-recommended a:hover,
+  .rail-recommended a:focus-visible,
+  .rail-comments a:hover,
+  .rail-comments a:focus-visible {
+    color: var(--text-primary);
+  }
+
+  .rail-comments a {
+    white-space: normal;
+  }
+
+  @media (min-width: 1180px) {
+    .site-rail {
+      display: block;
+    }
+  }
+
+  @media (max-width: 1180px) {
+    .rail-section,
+    :global(.section-rail),
+    :global(.rail-links) {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  @media (max-width: 1179px) {
+    .mobile-rail-content :global(.friends-site-info),
+    .mobile-rail-content :global(.recent-updates),
+    .mobile-rail-content :global(.popular-posts),
+    .mobile-rail-content :global(.rail-links),
+    .mobile-rail-content :global(.glass-card) {
+      padding: 0.75rem 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .site-rail > .rail-sticky {
+      display: none;
+    }
+    .mobile-rail-content .rail-sticky {
+      position: static;
+      margin: 0;
+      gap: 1rem;
+    }
+    .mobile-rail-content .rail-section {
+      padding: 0.75rem 0;
+    }
+    .mobile-rail-content :global(.section-rail) {
+      max-height: none;
+      padding: 0.75rem 0;
+      overflow: visible;
+    }
+    .mobile-rail-content .rail-toc ol {
+      max-height: none;
+      overflow: visible;
+    }
+    .mobile-rail-content :is(.rail-toc, .rail-recommended, .rail-comments) a {
+      padding-block: 0.65rem;
+      font-size: 0.85rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .mobile-rail-content :global(.bookmark-directory a),
+    .mobile-rail-content :global(.memo-directory a) {
+      padding-block: 0.7rem;
+      font-size: 0.85rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .mobile-rail-content .back-to-top-dock {
+      display: none;
+    }
+    .mobile-rail-content :global(.home-rail) {
+      gap: 1.25rem;
+    }
+    .mobile-rail-content :global(.recent-updates .post-title),
+    .mobile-rail-content :global(.popular-posts .post-title) {
+      font-size: 0.8rem;
+    }
+  }
+</style>

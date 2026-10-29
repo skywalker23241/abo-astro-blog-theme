@@ -1,0 +1,383 @@
+---
+interface Props {
+  title: string
+  slug: string
+}
+
+const { title, slug } = Astro.props
+// Keep each article's palette stable when the timeline order changes.
+const palette =
+  Array.from(slug).reduce((value, char) => (value * 31 + char.charCodeAt(0)) >>> 0, 0) % 6
+const ornament = ['rays', 'contours', 'waves', 'dots', 'lenses'][palette]
+---
+
+<div class:list={['gradient-cover', `palette-${palette + 1}`]} aria-hidden="true">
+  <div class="base"></div>
+  <div class="color-field">
+    <div class="orb orb--a"></div><div class="orb orb--b"></div>
+    <div class="orb orb--c"></div><div class="orb orb--d"></div>
+  </div>
+  <div class="shade"></div>
+  {
+    ornament && (
+      <div class="ornament">
+        <img
+          src={`/images/gradient-covers/${ornament}.svg`}
+          width="400"
+          height="400"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    )
+  }
+  <div class="glow"></div>
+  <canvas class="grain"></canvas>
+  <span class="cover-title">{title}</span>
+</div>
+
+<script>
+  import { setupGradientCovers } from '@/scripts/gradient-covers'
+  let cleanup: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    cleanup?.()
+    cleanup = setupGradientCovers()
+  })
+  document.addEventListener('astro:before-swap', () => {
+    cleanup?.()
+    cleanup = undefined
+  })
+</script>
+
+<style>
+  .gradient-cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 12px;
+    container-type: inline-size;
+    background: var(--bottom);
+
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Exactly one half-pixel, very low-contrast inner keyline. */
+  .gradient-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 0.5px rgba(5, 8, 13, 0.25);
+    pointer-events: none;
+  }
+
+  .base,
+  .color-field,
+  .shade,
+  .ornament,
+  .grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .base {
+    z-index: 0;
+    background: linear-gradient(180deg, var(--top) 0%, var(--middle) 49%, var(--bottom) 100%);
+  }
+
+  .color-field {
+    z-index: 1;
+    inset: -8%;
+    transform: translate3d(var(--field-x, 0px), var(--field-y, 0px), 0);
+    will-change: transform;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.82;
+    background: radial-gradient(
+      ellipse at center,
+      var(--orb-color) 0%,
+      var(--orb-color) 13%,
+      transparent 70%
+    );
+    will-change: transform;
+    transform-origin: 50% 50%;
+  }
+
+  .gradient-cover .orb {
+    animation-play-state: paused;
+  }
+
+  .gradient-cover.is-hovered .orb {
+    animation-play-state: running;
+  }
+
+  .orb--a {
+    --orb-color: var(--c1);
+    width: 128%;
+    height: 123%;
+    top: -51%;
+    left: -45%;
+    animation: float-a 23s ease-in-out infinite alternate;
+  }
+
+  .orb--b {
+    --orb-color: var(--c2);
+    width: 118%;
+    height: 117%;
+    top: -47%;
+    right: -48%;
+    animation: float-b 27s ease-in-out infinite alternate;
+  }
+
+  .orb--c {
+    --orb-color: var(--c3);
+    width: 122%;
+    height: 128%;
+    bottom: -51%;
+    left: -49%;
+    animation: float-c 20s ease-in-out infinite alternate;
+  }
+
+  .orb--d {
+    --orb-color: var(--c4);
+    width: 134%;
+    height: 131%;
+    bottom: -53%;
+    right: -52%;
+    animation: float-d 28s ease-in-out infinite alternate;
+  }
+
+  .shade {
+    z-index: 2;
+    background: linear-gradient(
+      164deg,
+      rgba(5, 7, 13, 0.055) 0%,
+      rgba(10, 10, 15, 0.1) 47%,
+      rgba(3, 5, 10, 0.15) 100%
+    );
+  }
+
+  .ornament {
+    z-index: 3;
+    inset: -5%;
+    opacity: 0.31;
+    color: white;
+    transform: translate3d(var(--pattern-x, 0px), var(--pattern-y, 0px), 0);
+    -webkit-mask-image: radial-gradient(
+      ellipse 55% 47% at 50% 50%,
+      transparent 0%,
+      transparent 38%,
+      rgba(0, 0, 0, 0.2) 62%,
+      #000 100%
+    );
+    mask-image: radial-gradient(
+      ellipse 55% 47% at 50% 50%,
+      transparent 0%,
+      transparent 38%,
+      rgba(0, 0, 0, 0.2) 62%,
+      #000 100%
+    );
+    will-change: transform;
+  }
+
+  .ornament img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .glow {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    left: 50%;
+    width: 72%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) translate3d(var(--glow-x, 0px), var(--glow-y, 0px), 0);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(255, 255, 255, 0.14) 24%,
+      rgba(255, 255, 255, 0.045) 48%,
+      transparent 72%
+    );
+    mix-blend-mode: screen;
+    transition: opacity 0.55s ease;
+    will-change: opacity, transform;
+  }
+
+  .gradient-cover.is-hovered .glow {
+    opacity: 0.53;
+  }
+
+  .grain {
+    z-index: 5;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+    image-rendering: pixelated;
+  }
+
+  .cover-title {
+    position: relative;
+    z-index: 6;
+    margin: 0;
+    color: #fff;
+    font-family:
+      Georgia, 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', STSong, SimSun, serif;
+    font-size: clamp(0.75rem, 11cqw, 1.2rem);
+    font-weight: 600;
+    line-height: 1.55;
+    width: 80%;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.025em;
+    text-align: center;
+    text-wrap: balance;
+    text-decoration: none;
+    text-shadow: 0 2px 12px rgba(5, 9, 18, 0.2);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* Adjacent-hue palettes: cooler/lighter at top, warmer/deeper below. */
+  .palette-1 {
+    --top: #ad9bbf;
+    --middle: #ba879f;
+    --bottom: #a66147;
+    --c1: #c1abe1;
+    --c2: #e1a2c4;
+    --c3: #db8e86;
+    --c4: #f0b66d;
+  }
+  .palette-2 {
+    --top: #9ba9ad;
+    --middle: #6b7378;
+    --bottom: #45332e;
+    --c1: #b6c0bf;
+    --c2: #7d97a5;
+    --c3: #9a776c;
+    --c4: #644638;
+  }
+  .palette-3 {
+    --top: #a3bdce;
+    --middle: #4f7898;
+    --bottom: #112e55;
+    --c1: #bbd4de;
+    --c2: #80adc7;
+    --c3: #5381a9;
+    --c4: #163f72;
+  }
+  .palette-4 {
+    --top: #a5c1c2;
+    --middle: #658d83;
+    --bottom: #173c35;
+    --c1: #bfd4d2;
+    --c2: #8eadaf;
+    --c3: #679a88;
+    --c4: #235949;
+  }
+  .palette-5 {
+    --top: #b7a4d2;
+    --middle: #796999;
+    --bottom: #22193f;
+    --c1: #d1bbeb;
+    --c2: #a69bd6;
+    --c3: #74569e;
+    --c4: #322453;
+  }
+  .palette-6 {
+    --top: #b4c1c5;
+    --middle: #a07e77;
+    --bottom: #743b30;
+    --c1: #cdd4d4;
+    --c2: #9dadb5;
+    --c3: #b67c70;
+    --c4: #bd5e41;
+  }
+
+  @keyframes float-a {
+    0% {
+      transform: translate3d(-3%, 0%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(3%, 4%, 0) scale(1.06);
+    }
+    100% {
+      transform: translate3d(7%, -3%, 0) scale(1.025);
+    }
+  }
+  @keyframes float-b {
+    0% {
+      transform: translate3d(3%, -3%, 0) scale(1.035);
+    }
+    50% {
+      transform: translate3d(-6%, 3%, 0) scale(1);
+    }
+    100% {
+      transform: translate3d(-1%, 6%, 0) scale(1.07);
+    }
+  }
+  @keyframes float-c {
+    0% {
+      transform: translate3d(-2%, -4%, 0) scale(1.055);
+    }
+    50% {
+      transform: translate3d(5%, 3%, 0) scale(1.01);
+    }
+    100% {
+      transform: translate3d(-5%, 2%, 0) scale(1.06);
+    }
+  }
+  @keyframes float-d {
+    0% {
+      transform: translate3d(4%, 4%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-3%, -5%, 0) scale(1.065);
+    }
+    100% {
+      transform: translate3d(-7%, 1%, 0) scale(1.025);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orb {
+      animation: none !important;
+    }
+    .color-field,
+    .ornament,
+    .glow {
+      transform: none !important;
+      transition: none !important;
+      will-change: auto;
+    }
+    .glow,
+    .gradient-cover.is-hovered .glow {
+      opacity: 0 !important;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .orb {
+      animation: none;
+    }
+  }
+</style>

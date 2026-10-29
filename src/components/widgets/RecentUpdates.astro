@@ -1,0 +1,114 @@
+---
+import FormattedDate from '@/components/widgets/FormattedDate.astro'
+import { stripCategoryPrefix } from '@/utils/category'
+import type { CollectionEntry } from 'astro:content'
+import Clock from 'phosphor-astro/Clock.astro'
+
+interface Props {
+  posts: CollectionEntry<'posts'>[]
+}
+
+const { posts } = Astro.props
+const recentPosts = posts
+  .map((post) => ({
+    post,
+    updatedAt: post.data.updatedDate ?? post.data.pubDate
+  }))
+  .sort((a, b) => b.updatedAt.valueOf() - a.updatedAt.valueOf())
+  .slice(0, 6)
+---
+
+<section class="recent-updates" aria-labelledby="recent-updates-title">
+  <h2 id="recent-updates-title">最近更新</h2>
+  <ol>
+    {
+      recentPosts.map(({ post, updatedAt }) => (
+        <li>
+          <a href={`/${post.id}/`} data-astro-prefetch="viewport">
+            <span class="post-title">{stripCategoryPrefix(post.data.title)}</span>
+            <span class="post-date">
+              <Clock width="0.75rem" height="0.75rem" aria-hidden="true" />
+              <span class="sr-only">更新于</span>
+              <FormattedDate date={updatedAt} format="YYYY-MM-DD" context="list" />
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<style>
+  .recent-updates {
+    padding: 1rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen-soft), transparent 44%), var(--glass-surface-muted);
+    box-shadow: var(--glass-highlight-muted), var(--glass-shadow-muted);
+    backdrop-filter: blur(18px) saturate(112%);
+    -webkit-backdrop-filter: blur(18px) saturate(112%);
+  }
+
+  h2 {
+    margin: 0 0 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  ol {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    border-top: 1px dashed var(--divider-color);
+  }
+
+  a {
+    display: block;
+    padding: 0.55rem 0;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 0.6rem;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  a:hover .post-title,
+  a:focus-visible .post-title {
+    color: var(--text-primary);
+  }
+
+  .post-title {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    transition: color 0.15s ease-out;
+  }
+
+  .post-date {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.18rem;
+    color: var(--text-tertiary);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .post-date :global(svg) {
+    flex-shrink: 0;
+  }
+</style>

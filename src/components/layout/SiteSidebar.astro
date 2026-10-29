@@ -1,0 +1,283 @@
+---
+import { themeConfig, integrationConfig } from '@/config'
+import ThemeToggle from '@/components/ui/ThemeToggle.astro'
+import { primaryNavLinks } from '@/lib/navigation'
+import BookmarkSimple from 'phosphor-astro/BookmarkSimple.astro'
+import Folders from 'phosphor-astro/Folders.astro'
+import GameController from 'phosphor-astro/GameController.astro'
+import House from 'phosphor-astro/House.astro'
+import NotePencil from 'phosphor-astro/NotePencil.astro'
+import Pulse from 'phosphor-astro/Pulse.astro'
+import RssSimple from 'phosphor-astro/RssSimple.astro'
+import Users from 'phosphor-astro/Users.astro'
+
+const navIcons: Record<string, typeof House> = {
+  '/blog/': House,
+  '/categories/': Folders,
+  '/now/': Pulse,
+  '/highlights/': GameController,
+  '/nav/': BookmarkSimple,
+  '/friends/': Users,
+  '/newsletter/': RssSimple,
+  '/para-notes/': NotePencil
+}
+
+const normalizedPath = Astro.url.pathname === '/' ? '/' : Astro.url.pathname.replace(/\/$/, '')
+const isArticlePath = !new Set([
+  '/',
+  '/blog',
+  '/categories',
+  '/now',
+  '/highlights',
+  '/nav',
+  '/friends',
+  '/newsletter',
+  '/para-notes',
+  '/404',
+  '/404.html'
+]).has(normalizedPath)
+
+function isActive(href: string) {
+  const normalizedHref = href === '/' ? '/' : href.replace(/\/$/, '')
+  return normalizedHref === '/blog'
+    ? normalizedPath === '/blog' || isArticlePath
+    : normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`)
+}
+---
+
+<aside class="site-sidebar" aria-label="站点导航">
+  <div class="sidebar-sticky">
+    <a class="sidebar-brand" href="/blog/" aria-label="返回博客首页">
+      <img
+        class="brand-logo brand-logo-light"
+        src="/logo-light.png"
+        alt={themeConfig.site.title}
+        width="184"
+        height="112"
+      />
+      <img
+        class="brand-logo brand-logo-dark"
+        src="/logo-dark.png"
+        alt=""
+        width="184"
+        height="112"
+      />
+    </a>
+
+    <p class="sidebar-intro">{integrationConfig.profile.tagline}</p>
+
+    <nav class="sidebar-nav" aria-label="主要导航">
+      <ol>
+        {
+          primaryNavLinks.map((link) => {
+            const Icon = navIcons[link.href]
+
+            return (
+              <li>
+                <a
+                  class:list={{ 'is-active': isActive(link.href) }}
+                  href={link.href}
+                  aria-current={isActive(link.href) ? 'page' : undefined}
+                >
+                  <Icon width="1.125rem" height="1.125rem" aria-hidden="true" />
+                  <span>{link.label}</span>
+                </a>
+              </li>
+            )
+          })
+        }
+      </ol>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span>主题</span>
+      <ThemeToggle />
+    </div>
+  </div>
+</aside>
+
+<style>
+  .site-sidebar {
+    display: none;
+    min-width: 0;
+  }
+
+  .sidebar-sticky {
+    position: sticky;
+    top: 2.75rem;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    margin-top: 1.8rem;
+    padding: 1.15rem 0.8rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(160deg, var(--glass-sheen-soft), transparent 42%), var(--glass-surface-strong);
+    box-shadow: var(--glass-highlight), var(--glass-shadow);
+    backdrop-filter: blur(18px) saturate(112%);
+    -webkit-backdrop-filter: blur(18px) saturate(112%);
+  }
+
+  .sidebar-brand {
+    display: inline-flex;
+    width: 5.25rem;
+    margin: 0 auto;
+    color: var(--text-primary);
+  }
+
+  .brand-logo {
+    display: block;
+    width: 5.25rem;
+    height: auto;
+    aspect-ratio: 8 / 5;
+    object-fit: contain;
+  }
+
+  .brand-logo-dark {
+    display: none;
+  }
+
+  :global(html.dark) .brand-logo-light {
+    display: none;
+  }
+
+  :global(html.dark) .brand-logo-dark {
+    display: block;
+  }
+
+  .sidebar-intro {
+    width: 100%;
+    max-width: 10rem;
+    margin: 1.25rem auto 0;
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    text-align: center;
+  }
+
+  .sidebar-nav {
+    margin-top: 2rem;
+  }
+
+  .sidebar-nav ol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sidebar-nav li {
+    margin: 0;
+  }
+
+  .sidebar-nav a {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.62rem 0;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 550;
+    line-height: 1.3;
+    text-decoration: none;
+    transition:
+      color 0.15s ease-out,
+      transform 0.15s ease-out,
+      background-color 0.24s ease-out;
+    border-radius: 0.65rem;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  .sidebar-nav a:hover,
+  .sidebar-nav a:focus-visible,
+  .sidebar-nav a.is-active {
+    color: var(--text-primary);
+    transform: translateX(0.12rem);
+    background-color: color-mix(in srgb, var(--index-accent) 10%, transparent);
+  }
+
+  .sidebar-nav a.is-active::before {
+    position: absolute;
+    top: 0.72rem;
+    bottom: 0.72rem;
+    left: -1rem;
+    width: 2px;
+    background: var(--index-accent);
+    content: '';
+  }
+
+  .sidebar-nav a :global(svg) {
+    color: var(--text-tertiary);
+    transition: color 0.15s ease-out;
+  }
+
+  .sidebar-nav a:hover :global(svg),
+  .sidebar-nav a:focus-visible :global(svg),
+  .sidebar-nav a.is-active :global(svg) {
+    color: var(--index-accent);
+  }
+
+  .sidebar-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    margin-top: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--divider-color);
+    color: var(--text-tertiary);
+    font-size: 0.68rem;
+  }
+
+  .sidebar-foot > span {
+    margin-left: 0.55rem;
+  }
+
+  .sidebar-foot :global(astro-theme-toggle) {
+    display: inline-flex;
+    flex: none;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--text-secondary);
+  }
+
+  .sidebar-foot :global(astro-theme-toggle > div),
+  .sidebar-foot :global(astro-theme-toggle svg) {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  @media (min-width: 1180px) {
+    .site-sidebar {
+      display: block;
+    }
+  }
+
+  @media (max-width: 1180px) {
+    .sidebar-sticky {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-nav a:hover,
+    .sidebar-nav a:focus-visible,
+    .sidebar-nav a.is-active {
+      transform: none;
+    }
+  }
+</style>

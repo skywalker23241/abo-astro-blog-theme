@@ -1,0 +1,60 @@
+---
+interface Props {
+  title: string
+  links: { href: string; label: string }[]
+}
+
+const { title, links } = Astro.props
+---
+
+<nav class="rail-links" aria-label={title}>
+  <h2>{title}</h2>
+  <ul>
+    {
+      links.map((link) => (
+        <li>
+          <a href={link.href}>{link.label}</a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .rail-links {
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--divider-color);
+  }
+
+  h2 {
+    margin: 0 0 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    border-top: 1px dashed var(--divider-color);
+  }
+
+  a {
+    display: block;
+    padding: 0.55rem 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+
+  a:hover,
+  a:focus-visible {
+    color: var(--text-primary);
+  }
+</style>

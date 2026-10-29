@@ -1,0 +1,175 @@
+.replay-app .capture-interactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  border-top: 1px solid var(--border-default);
+}
+
+.featured-info .capture-interactions {
+  margin-top: 1rem;
+  padding: 0.75rem 0 0;
+}
+
+.replay-app .capture-interactions button,
+.highlight-comments button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--glass-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.replay-app .capture-interactions button:hover,
+.highlight-comments button:hover {
+  color: var(--index-accent);
+}
+
+.replay-app .capture-interactions button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--border-active);
+  color: var(--text-primary);
+}
+
+.replay-app .capture-interactions button:disabled,
+.highlight-comments button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.replay-app .capture-interactions button[aria-pressed='true'] svg {
+  color: #bb5575;
+}
+
+.highlight-comments {
+  min-width: 0;
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--replay-glass);
+  box-shadow: var(--replay-highlight);
+  scroll-margin-top: 2rem;
+}
+
+.highlight-comments[hidden],
+.highlight-comments button[hidden] {
+  display: none;
+}
+
+.highlight-comments > header,
+.highlight-comment-list header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.highlight-comments h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.highlight-comments header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.highlight-comments form {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+}
+
+.highlight-comments input,
+.highlight-comments textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--glass-surface-strong);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.highlight-comments textarea {
+  resize: vertical;
+}
+
+.highlight-comments form > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.comment-honeypot {
+  display: none;
+}
+
+.highlight-comment-list {
+  padding: 0;
+  margin: 1rem 0;
+  list-style: none;
+}
+
+.highlight-comment-list li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-default);
+  overflow-wrap: anywhere;
+}
+
+.highlight-comment-list header {
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.highlight-comment-list time {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+
+.highlight-comment-list li > p {
+  margin: 0.6rem 0;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.interaction-status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.interaction-status:empty {
+  display: none;
+}
+
+.player-modal-foot {
+  flex-wrap: wrap;
+}
+
+.player-modal-foot [data-player-interactions] .capture-interactions {
+  padding: 0;
+  border: 0;
+}
+
+@media (max-width: 560px) {
+  .highlight-comments {
+    padding: var(--spacing-md);
+  }
+}

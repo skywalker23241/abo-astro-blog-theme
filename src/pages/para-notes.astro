@@ -1,133 +1,634 @@
 ---
+import { themeConfig } from '@/config'
+import InlineHint from '@/components/ui/InlineHint.astro'
+import SiteToast from '@/components/ui/SiteToast.astro'
 import IndexLayout from '@/layouts/IndexLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import MagnifyingGlass from 'phosphor-astro/MagnifyingGlass.astro'
+import PencilSimple from 'phosphor-astro/PencilSimple.astro'
+import SignOut from 'phosphor-astro/SignOut.astro'
+import TextB from 'phosphor-astro/TextB.astro'
+import TextItalic from 'phosphor-astro/TextItalic.astro'
+import TextH from 'phosphor-astro/TextH.astro'
+import Quotes from 'phosphor-astro/Quotes.astro'
+import ListBullets from 'phosphor-astro/ListBullets.astro'
+import Code from 'phosphor-astro/Code.astro'
+import Link from 'phosphor-astro/Link.astro'
+import X from 'phosphor-astro/X.astro'
+import Target from 'phosphor-astro/Target.astro'
+import SquaresFour from 'phosphor-astro/SquaresFour.astro'
+import Books from 'phosphor-astro/Books.astro'
+import Archive from 'phosphor-astro/Archive.astro'
+import ArrowLeft from 'phosphor-astro/ArrowLeft.astro'
+import { paraCategories } from '@/data/para-categories'
 
-const pageTitle = 'Notes'
-const pageDescription = 'A small memo zone — public to read, private to write.'
+const pageTitle = '笔记'
+const pageDescription = '按 PARA 整理的公开笔记：项目、领域、资源与归档。'
+const categoryIcons = {
+  projects: Target,
+  areas: SquaresFour,
+  resources: Books,
+  archives: Archive
+}
+const formatTools = [
+  { action: 'heading', label: '标题', icon: TextH },
+  { action: 'bold', label: '加粗（Ctrl / ⌘ B）', icon: TextB },
+  { action: 'italic', label: '斜体（Ctrl / ⌘ I）', icon: TextItalic },
+  { action: 'quote', label: '引用', icon: Quotes },
+  { action: 'list', label: '无序列表', icon: ListBullets },
+  { action: 'code', label: '行内代码', icon: Code },
+  { action: 'link', label: '链接', icon: Link }
+]
 ---
 
-<IndexLayout title={pageTitle} description={pageDescription}>
-  <div class="para-notes-page">
-    <header class="para-notes-header">
-      <div>
-        <h1>Notes</h1>
-      </div>
-
-      <div class="page-actions">
-        <button
-          id="memo-search-toggle"
-          class="ghost-icon-button"
-          type="button"
-          aria-label="Search memos"
+<IndexLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`笔记 · ${themeConfig.site.title}`}
+>
+  <div class="para-notes-page minimal-page">
+    <MinimalPageHeader meta="" title="笔记" suffix="PARA" />
+    <div class="memo-tools" aria-label="笔记工具">
+      <button id="memo-search-toggle" type="button" aria-label="搜索笔记">
+        <MagnifyingGlass width="1.125rem" height="1.125rem" aria-hidden="true" />
+        <span>搜索笔记</span>
+      </button>
+      <button id="memo-edit-toggle" type="button" aria-label="编辑笔记">
+        <span data-memo-edit-icon
+          ><PencilSimple width="1.125rem" height="1.125rem" aria-hidden="true" /></span
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M10.5 4.5a6 6 0 1 0 3.79 10.65l4.28 4.27 1.06-1.06-4.27-4.28A6 6 0 0 0 10.5 4.5Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.7"></path>
-          </svg>
-        </button>
-        <button
-          id="memo-edit-toggle"
-          class="ghost-icon-button edit-icon-button"
-          type="button"
-          aria-label="Edit memos"
+        <span data-memo-exit-icon hidden
+          ><SignOut width="1.125rem" height="1.125rem" aria-hidden="true" /></span
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M4 20h4.2l9.9-9.9a1.7 1.7 0 0 0 0-2.4l-1.8-1.8a1.7 1.7 0 0 0-2.4 0L4 15.8V20Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.7"></path>
-            <path
-              d="m12.8 7 4.2 4.2"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.7"></path>
-          </svg>
-        </button>
-      </div>
-    </header>
+        <span class="memo-edit-label sr-only">编辑笔记</span>
+      </button>
+    </div>
+    <nav class="para-categories" aria-label="PARA 笔记分类">
+      {
+        paraCategories.map((category) => {
+          const Icon = categoryIcons[category.id]
+          return (
+            <button type="button" data-category={category.id} aria-controls="memo-stream">
+              <span class="para-category-initial" aria-hidden="true">
+                {category.english[0]}
+              </span>
+              <Icon width="1.75rem" height="1.75rem" aria-hidden="true" />
+              <span class="para-folder-meta">
+                <span class="para-category-name">{category.name}</span>
+                <span class="para-folder-count">
+                  <span data-category-count={category.id}>—</span> 篇笔记
+                </span>
+              </span>
+            </button>
+          )
+        })
+      }
+    </nav>
+    <div id="memo-folder-heading" class="para-context" hidden>
+      <button id="memo-show-all" type="button"
+        ><ArrowLeft width="1rem" height="1rem" aria-hidden="true" />返回文件夹</button
+      >
+      <h2 id="memo-folder-title" tabindex="-1"></h2>
+    </div>
 
-    <section id="memo-editor" class="editor-panel" hidden>
-      <div class="editor-top">
-        <h2 id="memo-form-title">New memo</h2>
-        <button id="memo-cancel-edit" class="ghost-text-button" type="button" hidden>
-          Cancel
-        </button>
-      </div>
-
-      <form id="memo-form" class="editor-form">
-        <input id="memo-id" type="hidden" />
-        <input id="memo-title" type="text" maxlength="120" placeholder="Title" required />
-        <textarea id="memo-content" rows="6" maxlength="4000" placeholder="Write down a thought." required
-        ></textarea>
-        <div class="editor-actions">
-          <button id="memo-submit" class="pill-button" type="submit">Save</button>
+    <section id="memo-editor" class="editor-panel minimal-index-row" hidden>
+      <div class="editor-content minimal-index-content glass-card">
+        <div class="editor-top minimal-section-head">
+          <h2 id="memo-form-title">新增笔记</h2>
+          <button id="memo-cancel-edit" class="ghost-text-button" type="button"> 新建笔记 </button>
         </div>
-      </form>
+
+        <form id="memo-form" class="editor-form">
+          <input id="memo-id" type="hidden" />
+          <label class="sr-only" for="memo-title">笔记标题</label>
+          <input id="memo-title" type="text" maxlength="120" placeholder="标题" required />
+          <div class="memo-category-field" role="group" aria-labelledby="memo-category-label">
+            <span id="memo-category-label">笔记分类</span>
+            <input id="memo-category" name="category" type="hidden" value="resources" />
+            <div class="memo-category-buttons">
+              {
+                paraCategories.map((category) => (
+                  <button
+                    type="button"
+                    data-editor-category={category.id}
+                    aria-pressed={category.id === 'resources'}
+                  >
+                    {category.name}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+          <div class="markdown-controls">
+            <div class="format-tools" role="group" aria-label="Markdown 格式">
+              {
+                formatTools.map(({ action, label, icon: Icon }) => (
+                  <button type="button" data-format={action} title={label} aria-label={label}>
+                    <Icon width="1.125rem" height="1.125rem" aria-hidden="true" />
+                  </button>
+                ))
+              }
+            </div>
+            <div class="editor-modes" role="group" aria-label="编辑器视图">
+              <button type="button" data-mode="write" aria-pressed="false">编辑</button>
+              <button type="button" data-mode="split" aria-pressed="true">分栏</button>
+              <button type="button" data-mode="preview" aria-pressed="false">预览</button>
+            </div>
+          </div>
+          <div id="memo-workspace" class="markdown-workspace" data-mode="split">
+            <label class="sr-only" for="memo-content">Markdown 内容</label>
+            <textarea
+              id="memo-content"
+              rows="16"
+              maxlength="4000"
+              placeholder="从这里开始写，支持 Markdown…"
+              aria-describedby="memo-editor-help"
+              required></textarea>
+            <div
+              id="memo-preview"
+              class="memo-markdown editor-preview"
+              role="region"
+              aria-label="Markdown 实时预览"
+            >
+            </div>
+          </div>
+          <div class="editor-actions">
+            <span id="memo-editor-help">Markdown · Ctrl / ⌘ S 保存</span>
+            <span id="memo-counter">0 / 4000</span>
+            <button id="memo-submit" class="pill-button" type="submit">保存笔记</button>
+          </div>
+        </form>
+      </div>
     </section>
 
-    <section class="memo-stream">
-      <div id="memo-empty" class="empty-state" hidden>Loading...</div>
-      <div id="memo-list" class="memo-list" aria-live="polite"></div>
+    <section id="memo-stream" class="memo-stream minimal-index-row" hidden>
+      <div class="memo-stream-content minimal-index-content">
+        <div id="memo-empty" class="empty-state" hidden>努力加载中......</div>
+        <div id="memo-list" class="memo-list" aria-live="polite"></div>
+      </div>
     </section>
   </div>
 
-  <div id="memo-search-modal" class="overlay" hidden>
+  <div class="section-rail memo-rail" slot="rail">
+    <nav class="memo-directory" aria-labelledby="memo-directory-heading">
+      <h2 id="memo-directory-heading" class="memo-directory-label">最近更新</h2>
+      <ol id="memo-rail-list" aria-live="polite"></ol>
+      <p id="memo-rail-empty" class="memo-directory-empty">正在加载…</p>
+    </nav>
+  </div>
+
+  <SiteToast />
+
+  <dialog id="memo-reader-modal" class="overlay" aria-labelledby="memo-reader-title">
+    <div class="modal-backdrop" data-close-modal="reader"></div>
+    <article class="overlay-card reader-card">
+      <header class="modal-head reader-head">
+        <div>
+          <h2 id="memo-reader-title"></h2>
+          <p id="memo-reader-time" class="modal-description"></p>
+        </div>
+        <button
+          class="memo-close"
+          type="button"
+          data-close-modal="reader"
+          aria-label="关闭笔记"
+          autofocus
+        >
+          <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+        </button>
+      </header>
+      <div id="memo-reader-content" class="memo-markdown reader-content"></div>
+    </article>
+  </dialog>
+
+  <dialog id="memo-search-modal" class="overlay" aria-label="搜索笔记">
     <div class="modal-backdrop" data-close-modal="search"></div>
     <div class="overlay-card search-card">
       <div class="modal-head">
-        <h2>Search</h2>
-        <button class="ghost-text-button" type="button" data-close-modal="search">Close</button>
+        <div>
+          <h2>搜索笔记</h2>
+          <p class="modal-description">
+            <InlineHint>在当前文件夹的标题与正文中查找；返回文件夹后可搜索全部笔记。</InlineHint>
+          </p>
+        </div>
+        <button class="memo-close" type="button" data-close-modal="search" aria-label="关闭搜索">
+          <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+        </button>
       </div>
+      <label class="sr-only" for="memo-search-input">搜索笔记</label>
       <input
         id="memo-search-input"
         class="modal-input"
         type="search"
-        placeholder="Search title or content"
+        placeholder="搜索标题或内容"
         autocomplete="off"
       />
+      <div class="modal-footer">
+        <p id="memo-search-count" class="modal-description" role="status"></p>
+        <button class="memo-primary" type="button" data-close-modal="search">查看结果</button>
+      </div>
     </div>
-  </div>
+  </dialog>
 
-  <div id="memo-passcode-modal" class="overlay" hidden>
+  <dialog id="memo-passcode-modal" class="overlay" aria-label="管理员验证">
     <div class="modal-backdrop" data-close-modal="passcode"></div>
     <div class="overlay-card passcode-card">
       <div class="modal-head">
-        <h2>Admin</h2>
-        <button class="ghost-text-button" type="button" data-close-modal="passcode">Close</button>
+        <div>
+          <h2>进入编辑模式</h2>
+        </div>
+        <button class="memo-close" type="button" data-close-modal="passcode" aria-label="关闭验证">
+          <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+        </button>
       </div>
       <form id="memo-passcode-form" class="passcode-form">
+        <label class="sr-only" for="memo-passcode-input">管理员密码</label>
         <input
           id="memo-passcode-input"
           class="modal-input"
           type="password"
-          placeholder="Admin passcode"
+          placeholder="输入管理员口令"
           autocomplete="current-password"
+          aria-describedby="memo-passcode-help"
           required
         />
+        <div class="modal-footer">
+          <button class="memo-secondary" type="button" data-close-modal="passcode">取消</button>
+          <button id="memo-unlock" class="memo-primary" type="submit">解锁编辑</button>
+        </div>
       </form>
+      <p class="modal-description" id="memo-passcode-help">
+        <InlineHint>验证管理员口令后，即可编辑和保存笔记。</InlineHint>
+      </p>
     </div>
-  </div>
+  </dialog>
 
-  <script src="/scripts/para-notes.js" defer></script>
+  <script>
+    import '@/scripts/para-notes.js'
+  </script>
 </IndexLayout>
 
 <style is:global>
   .para-notes-page {
-    display: grid;
-    gap: 1.5rem;
-    animation: memo-page-in 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+    display: block;
   }
 
-  .para-notes-page .para-notes-header,
+  .para-notes-page .para-categories {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .para-notes-page .para-categories button {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+    min-height: 12rem;
+    padding: 1.25rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    background: var(--glass-surface-strong);
+    color: var(--text-secondary);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .para-notes-page .para-categories button:hover {
+    border-color: var(--index-accent);
+    background: var(--link-hover-bg);
+    color: var(--text-primary);
+  }
+
+  .para-notes-page .para-category-initial {
+    position: absolute;
+    right: 0.8rem;
+    bottom: 0;
+    z-index: -1;
+    color: color-mix(in srgb, var(--index-accent) 16%, transparent);
+    font-family: var(--sans);
+    font-size: 10rem;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .para-notes-page .para-categories button > svg {
+    align-self: flex-end;
+    color: var(--index-accent);
+  }
+
+  .para-notes-page .para-folder-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: auto;
+    gap: 0.5rem;
+  }
+
+  .para-notes-page .para-category-name {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .para-notes-page [data-category-count] {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .para-notes-page .para-folder-count {
+    font-size: 0.75rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .para-notes-page :is(.para-categories, .para-context, .memo-stream)[hidden] {
+    display: none;
+  }
+
+  .para-notes-page .para-context {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 1rem 0 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .para-notes-page .para-context h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .para-notes-page #memo-show-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    background: var(--glass-surface-strong);
+    color: var(--text-secondary);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .para-notes-page #memo-show-all:hover {
+    color: var(--text-primary);
+    background: var(--link-hover-bg);
+  }
+
+  .para-notes-page .memo-category-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .para-notes-page .memo-category-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .para-notes-page .memo-category-buttons button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    background: var(--glass-surface-strong);
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .para-notes-page .memo-category-buttons button:hover,
+  .para-notes-page .memo-category-buttons button[aria-pressed='true'] {
+    border-color: var(--index-accent);
+    background: var(--link-hover-bg);
+    color: var(--text-primary);
+  }
+
+  .para-notes-page .memo-category-buttons button[aria-pressed='true'] {
+    font-weight: 600;
+  }
+
+  @media (max-width: 520px) {
+    .para-notes-page .para-categories {
+      gap: 0.5rem;
+    }
+    .para-notes-page .para-categories button {
+      min-height: 10.5rem;
+      padding: 1rem;
+    }
+  }
+
+  .para-notes-page .memo-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3rem;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .para-notes-page .markdown-controls,
+  .para-notes-page .format-tools,
+  .para-notes-page .editor-modes {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .para-notes-page .markdown-controls {
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .para-notes-page .markdown-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding: 0.4rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .para-notes-page .markdown-controls button:hover,
+  .para-notes-page .markdown-controls button[aria-pressed='true'] {
+    background: var(--link-hover-bg);
+    color: var(--text-primary);
+  }
+
+  .para-notes-page :is(button, summary):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .para-notes-page .markdown-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    background: var(--glass-surface-strong);
+  }
+
+  .para-notes-page .markdown-workspace[data-mode='split'] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .para-notes-page .markdown-workspace textarea {
+    border: 0;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    tab-size: 2;
+    min-width: 0;
+  }
+
+  .para-notes-page .editor-preview {
+    min-width: 0;
+    padding: 0.85rem;
+    min-height: 22rem;
+  }
+
+  .para-notes-page [data-mode='split'] .editor-preview {
+    border-left: 1px solid var(--glass-border);
+  }
+
+  .para-notes-page .editor-preview:empty::before {
+    content: '预览会在这里显示';
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .para-notes-page .editor-actions {
+    flex-wrap: wrap;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+  }
+
+  .para-notes-page #memo-editor-help {
+    margin-right: auto;
+  }
+
+  .para-notes-page .memo-title button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+
+  .para-notes-page .memo-excerpt {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    white-space: pre-line;
+  }
+
+  :is(.para-notes-page, .overlay) .memo-markdown {
+    color: var(--text-primary);
+    font-size: 0.94rem;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+
+  :is(.para-notes-page, .overlay) .memo-markdown :is(h1, h2, h3, h4, h5, h6) {
+    margin: 1.1em 0 0.5em;
+    font-size: 1.15em;
+    line-height: 1.5;
+  }
+
+  :is(.para-notes-page, .overlay) .memo-markdown h1 {
+    font-size: 1.5em;
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown h2 {
+    font-size: 1.3em;
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown :first-child {
+    margin-top: 0;
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown :is(ul, ol) {
+    padding-left: 1.5em;
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown blockquote {
+    margin: 1em 0;
+    padding-left: 1em;
+    border-left: 2px solid var(--index-accent);
+    color: var(--text-secondary);
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown pre {
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0.8rem;
+    background: var(--code-bg);
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown code {
+    font-family: var(--mono);
+    background: var(--code-bg);
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown :is(td, th) {
+    padding: 0.4em 0.7em;
+    border: 1px solid var(--border);
+  }
+  :is(.para-notes-page, .overlay) .memo-markdown a {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .para-notes-page .markdown-workspace[data-mode='split'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .para-notes-page [data-mode='split'] .editor-preview {
+      border-left: 0;
+      border-top: 1px solid var(--glass-border);
+    }
+    .para-notes-page .editor-content {
+      padding: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overlay,
+    .overlay .overlay-card {
+      animation: none !important;
+    }
+  }
+
   .para-notes-page .page-actions,
   .para-notes-page .editor-top,
   .para-notes-page .memo-card-head,
@@ -137,70 +638,64 @@ const pageDescription = 'A small memo zone — public to read, private to write.
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.9rem;
+    gap: 0.75rem;
   }
 
-  .para-notes-page .para-notes-header {
-    align-items: center;
-    padding: 0.25rem 0 0.4rem;
-  }
-
-  .para-notes-page h1,
   .para-notes-page h2,
   .overlay h2 {
     margin: 0;
     font-weight: 600;
   }
 
-  .para-notes-page h1 {
-    font-size: clamp(2rem, 4vw, 2.6rem);
-    letter-spacing: -0.04em;
-    line-height: 1;
-  }
-
-  .para-notes-page .memo-time,
-  .para-notes-page .empty-state {
-    color: var(--text-secondary);
+  .para-notes-page .page-actions {
+    gap: 0.2rem;
   }
 
   .para-notes-page .editor-panel,
   .para-notes-page .memo-stream {
-    border-top: 1px solid var(--border);
-    padding-top: 1.25rem;
-    animation: memo-section-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    margin-bottom: 3.75rem;
   }
 
-  .para-notes-page .editor-form,
-  .para-notes-page .memo-list {
+  .para-notes-page .editor-panel[hidden] {
+    display: none;
+  }
+
+  .para-notes-page .editor-content,
+  .para-notes-page .memo-stream-content {
+    min-width: 0;
+  }
+
+  .para-notes-page .editor-form {
     display: grid;
-    gap: 1rem;
+    gap: 0.65rem;
+    padding-left: 0;
   }
 
   .para-notes-page .editor-form input,
   .para-notes-page .editor-form textarea,
   .overlay .modal-input {
-    width: 100%;
     box-sizing: border-box;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--bg) 78%, var(--code-bg) 22%);
+    width: 100%;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    background: var(--glass-surface-strong);
     color: var(--text-primary);
-    padding: 0.95rem 1rem;
+    padding: 0.85rem;
     font: inherit;
-    line-height: 1.6;
+    line-height: 1.65;
   }
 
   .para-notes-page .editor-form textarea {
+    min-height: 9rem;
     resize: vertical;
-    min-height: 10rem;
   }
 
   .para-notes-page .editor-form input:focus,
   .para-notes-page .editor-form textarea:focus,
   .overlay .modal-input:focus {
     outline: none;
-    border-color: var(--text-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--selection) 80%, transparent);
+    border-color: var(--index-accent);
+    box-shadow: inset 0 -1px 0 var(--index-accent);
   }
 
   .para-notes-page .pill-button,
@@ -208,151 +703,340 @@ const pageDescription = 'A small memo zone — public to read, private to write.
   .para-notes-page .ghost-text-button,
   .overlay .pill-button,
   .overlay .ghost-text-button {
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    font: inherit;
-    cursor: pointer;
     position: relative;
     z-index: 2;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    cursor: pointer;
     pointer-events: auto;
     transition:
-      transform 0.18s ease,
-      border-color 0.18s ease,
-      background-color 0.18s ease,
-      color 0.18s ease;
+      color 0.16s ease-out,
+      background-color 0.16s ease-out,
+      transform 0.16s ease-out;
   }
 
-  .para-notes-page .pill-button,
-  .overlay .pill-button {
-    padding: 0.52rem 0.9rem;
-    border-radius: 999px;
-    background: var(--text-primary);
-    border-color: var(--text-primary);
-    color: var(--bg);
-    font-size: 0.95rem;
+  .para-notes-page .pill-button {
+    padding: 0.6rem 0.15rem;
+    color: var(--text-primary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .para-notes-page .ghost-icon-button {
-    width: 2.2rem;
-    height: 2.2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: 999px;
-    background: transparent;
-  }
-
-  .para-notes-page .edit-icon-button.is-active {
-    background: var(--text-primary);
-    border-color: var(--text-primary);
-    color: var(--bg);
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.4rem;
+    place-items: center;
   }
 
   .para-notes-page .ghost-icon-button svg {
-    width: 0.92rem;
-    height: 0.92rem;
+    width: 100%;
+    height: 100%;
   }
 
-  .para-notes-page .ghost-text-button,
-  .overlay .ghost-text-button {
-    padding: 0.48rem 0.82rem;
-    border-radius: 999px;
-    background: transparent;
-    font-size: 0.94rem;
-  }
-
-  .para-notes-page .pill-button:hover,
+  .para-notes-page .ghost-icon-button.is-active,
   .para-notes-page .ghost-icon-button:hover,
+  .para-notes-page .pill-button:hover,
   .para-notes-page .ghost-text-button:hover,
-  .overlay .pill-button:hover,
   .overlay .ghost-text-button:hover {
-    border-color: var(--text-primary);
-    transform: translateY(-1px);
+    color: var(--text-primary);
+    background-color: var(--link-hover-bg);
   }
 
   .para-notes-page .ghost-icon-button:hover {
-    transform: translateY(-1px) rotate(-8deg);
+    transform: rotate(-8deg);
   }
 
   .para-notes-page .ghost-text-button,
   .overlay .ghost-text-button {
-    color: var(--text-secondary);
+    padding: 0.35rem 0.15rem;
+  }
+
+  .para-notes-page :is(#memo-cancel-edit, #memo-submit) {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--index-accent) 35%, var(--glass-border));
+    border-radius: 0.85rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen), transparent 60%),
+      color-mix(in srgb, var(--index-accent) 10%, var(--glass-surface-strong));
+    box-shadow: var(--glass-control-highlight);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    letter-spacing: normal;
+    text-transform: none;
+    transition:
+      border-color 0.16s ease-out,
+      background-color 0.16s ease-out;
+  }
+
+  .para-notes-page #memo-submit {
+    border-color: color-mix(in srgb, var(--index-accent) 65%, var(--glass-border));
+    background:
+      linear-gradient(145deg, var(--glass-sheen), transparent 60%),
+      color-mix(in srgb, var(--index-accent) 25%, var(--glass-surface-strong));
+    font-weight: 600;
+  }
+
+  .para-notes-page :is(#memo-cancel-edit, #memo-submit):hover:not(:disabled) {
+    border-color: var(--index-accent);
+    background:
+      linear-gradient(145deg, var(--glass-sheen), transparent 60%),
+      color-mix(in srgb, var(--index-accent) 32%, var(--glass-surface-strong));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .para-notes-page :is(#memo-cancel-edit, #memo-submit) {
+      transition: none;
+    }
   }
 
   .para-notes-page .danger-button {
-    color: #8b2f2f;
+    color: #a04b4b;
   }
 
-  .para-notes-page .pill-button:disabled,
-  .para-notes-page .ghost-icon-button:disabled,
-  .para-notes-page .ghost-text-button:disabled,
-  .overlay .pill-button:disabled,
-  .overlay .ghost-text-button:disabled {
-    opacity: 0.5;
+  .para-notes-page button:disabled,
+  .overlay button:disabled {
+    opacity: 0.45;
     cursor: not-allowed;
     transform: none;
   }
 
-  .para-notes-page .page-actions {
-    flex-shrink: 0;
+  .para-notes-page .editor-actions {
+    justify-content: flex-end;
   }
 
-  .para-notes-page .editor-top,
+  .para-notes-page .memo-list {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .para-notes-page .memo-card {
+    position: relative;
+    padding: var(--card-padding, 1.5rem);
+    scroll-margin-top: 7rem;
+  }
+
   .para-notes-page .memo-card-head {
     align-items: flex-start;
   }
 
-  .para-notes-page .memo-card {
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    padding: 1.2rem 1.25rem;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg) 88%, white 12%),
-      color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%)
-    );
-    transform: translateY(0);
-    transition:
-      transform 0.22s ease,
-      border-color 0.22s ease,
-      box-shadow 0.22s ease;
-    animation: memo-card-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  .para-notes-page .memo-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--divider-color);
   }
 
-  html.dark .para-notes-page .memo-card {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg) 90%, white 2%),
-      color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%)
-    );
+  .para-notes-page .memo-read-button,
+  .para-notes-page .memo-card-footer .ghost-text-button {
+    min-height: 2.5rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.75rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+  }
+
+  .para-notes-page .memo-read-button {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-surface-strong);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .para-notes-page .memo-read-button:hover {
+    background: var(--link-hover-bg);
+  }
+
+  /* Flex items default to min-width: auto, so a long unbreakable string in
+     the title (e.g. a URL) would refuse to shrink and push the page wider
+     than the mobile viewport. Let the title/time column shrink so its text
+     can wrap instead of causing horizontal scroll. */
+  .para-notes-page .memo-card-head > div {
+    min-width: 0;
   }
 
   .para-notes-page .memo-title {
-    font-size: 1.06rem;
+    width: fit-content;
+    font-size: 1rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    transition: box-shadow 0.16s ease-out;
   }
 
-  .para-notes-page .memo-card:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in srgb, var(--text-primary) 18%, var(--border) 82%);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.06);
+  .para-notes-page .memo-time,
+  .para-notes-page .empty-state {
+    color: var(--text-tertiary);
   }
 
   .para-notes-page .memo-time {
-    margin: 0.25rem 0 0;
-    font-size: 0.88rem;
+    margin: 0.24rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .para-notes-page .memo-content {
-    margin: 1rem 0 0;
-    line-height: 1.8;
+    margin: 0.8rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.94rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  .memo-directory {
+    margin: 0;
+  }
+
+  .memo-tools {
+    gap: 0.75rem;
+  }
+
+  .memo-tools button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 0.9rem;
+    background: var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8rem;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 0.15s ease-out,
+      background-color 0.15s ease-out;
+  }
+
+  .memo-tools #memo-edit-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .memo-tools button:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .memo-tools button:hover,
+  .memo-tools button:focus-visible,
+  .memo-tools button.is-active {
+    border-color: color-mix(in srgb, var(--glass-border) 64%, transparent);
+    background: color-mix(in srgb, var(--index-accent) 7%, transparent);
+    color: var(--text-primary);
+  }
+
+  .memo-tools button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .memo-directory-label {
+    margin: 0 0 0.4rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--divider-color);
+    color: var(--text-tertiary);
+    font-size: 0.68rem;
+    font-weight: 550;
+  }
+
+  .memo-directory ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .memo-directory li {
+    margin: 0;
+    border-bottom: 1px dashed var(--divider-color);
+  }
+
+  .memo-directory li:last-child {
+    border-bottom: 0;
+  }
+
+  .memo-directory button {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    padding: 0.55rem 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    transition:
+      color 0.15s ease-out,
+      padding 0.15s ease-out;
+  }
+
+  .memo-directory button:hover,
+  .memo-directory button:focus-visible {
+    padding-left: 0.15rem;
+    color: var(--text-primary);
+  }
+
+  .memo-directory button:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .memo-directory time {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-tertiary);
+    font-size: 0.68rem;
+  }
+
+  @media (max-width: 1024px) {
+    .mobile-rail-content .memo-directory button {
+      min-height: 44px;
+      padding-block: 0.7rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .memo-directory-empty {
+    margin: 0.75rem 0 0;
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+    line-height: 1.6;
   }
 
   .para-notes-page .empty-state {
-    padding: 1rem 0;
+    padding: var(--card-padding, 1.5rem);
+    font-family: var(--mono);
+    font-size: 0.7rem;
   }
 
-  .overlay[hidden] {
+  .overlay:not([open]) {
     display: none;
   }
 
@@ -363,24 +1047,35 @@ const pageDescription = 'A small memo zone — public to read, private to write.
     display: grid;
     place-items: center;
     padding: 1.5rem;
-    animation: overlay-fade 0.16s ease-out;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
   }
 
   .overlay .modal-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(18, 18, 18, 0.1);
+    background: color-mix(in srgb, var(--bg) 45%, transparent);
   }
 
   .overlay .overlay-card {
     position: relative;
+    box-sizing: border-box;
     width: min(100%, 28rem);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 0.95rem 0.95rem 1rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    animation: overlay-pop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: clamp(1rem, 3vw, 1.75rem);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen), transparent 48%), var(--glass-surface-strong);
+    box-shadow: var(--glass-highlight), var(--glass-shadow);
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
   }
 
   .overlay .search-card {
@@ -388,69 +1083,114 @@ const pageDescription = 'A small memo zone — public to read, private to write.
   }
 
   .overlay .modal-head {
-    align-items: center;
-    margin-bottom: 0.7rem;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
   }
 
   .overlay .modal-head h2 {
-    font-size: 0.98rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-size: 1.15rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .overlay .modal-head > div {
+    min-width: 0;
+  }
+
+  .overlay .modal-description {
+    margin: 0.35rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.65;
+  }
+
+  .overlay #memo-passcode-help {
+    margin-top: 1rem;
+  }
+
+  .overlay .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .overlay #memo-search-count {
+    margin-right: auto;
+  }
+
+  .memo-close,
+  .overlay .memo-primary,
+  .overlay .memo-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.8rem;
+    background: var(--glass-surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.85rem;
+    box-shadow: var(--glass-control-highlight);
+    cursor: pointer;
+  }
+
+  .overlay .memo-primary {
+    background: color-mix(in srgb, var(--index-accent) 25%, var(--glass-surface-strong));
+  }
+
+  .memo-close {
+    flex-shrink: 0;
+    width: 2.5rem;
+    padding: 0.5rem;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .memo-close:hover,
+  .overlay :is(.memo-primary, .memo-secondary):hover {
+    background: var(--link-hover-bg);
+  }
+
+  .overlay :is(button, input, a):focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .overlay .reader-card {
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 44rem);
+    max-height: calc(100vh - 3rem);
+    max-height: calc(100dvh - 3rem);
+  }
+
+  .overlay .reader-head {
+    flex-shrink: 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .overlay .reader-content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 0.1rem 0.4rem 0.1rem 0.1rem;
   }
 
   .overlay .passcode-form {
     display: grid;
-    gap: 0;
-    margin-top: 0.15rem;
-  }
-
-  .overlay .modal-input {
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--bg) 92%, var(--code-bg) 8%);
-    padding: 0.82rem 0.9rem;
-    min-height: 0;
-  }
-
-  .overlay .ghost-text-button {
-    padding: 0.38rem 0.7rem;
-    font-size: 0.9rem;
-    border-color: transparent;
-  }
-
-  .overlay .ghost-text-button:hover {
-    background: color-mix(in srgb, var(--bg) 70%, var(--code-bg) 30%);
-    border-color: transparent;
-    transform: none;
-  }
-
-  @keyframes memo-page-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes memo-section-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   @keyframes memo-card-in {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(0.4rem);
     }
 
     to {
@@ -459,54 +1199,15 @@ const pageDescription = 'A small memo zone — public to read, private to write.
     }
   }
 
-  @keyframes overlay-fade {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes overlay-pop {
-    from {
-      opacity: 0;
-      transform: translateY(6px) scale(0.985);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @media (max-width: 720px) {
-    .para-notes-page .para-notes-header {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .para-notes-page .page-actions,
-    .para-notes-page .memo-actions {
-      justify-content: flex-start;
-      flex-wrap: wrap;
-    }
-
-    .para-notes-page .para-notes-header h1 {
-      line-height: 1;
-      margin: 0;
-    }
-
-    .para-notes-page .page-actions {
-      align-items: center;
-    }
-
+  @media (max-width: 520px) {
     .para-notes-page .memo-card-head,
     .para-notes-page .editor-top {
-      flex-direction: column;
-      align-items: stretch;
+      align-items: flex-start;
+    }
+
+    .para-notes-page .memo-actions {
+      flex-wrap: wrap;
+      justify-content: flex-start;
     }
   }
 </style>

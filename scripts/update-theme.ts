@@ -1,46 +1,27 @@
 #!/usr/bin/env tsx
-
-/**
- * Update theme from upstream repository
- * Usage: pnpm update-theme
- */
-
-import { execSync } from 'node:child_process'
-import fs from 'node:fs'
-import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import process from 'node:process'
 
-// Check and set up the upstream remote repository
+const remote = 'theme'
+const url = 'https://github.com/skywalker23241/abo-astro-blog-theme.git'
+const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim()
+
 try {
-  execSync('git remote get-url upstream', { stdio: 'ignore' })
-} catch {
-  execSync('git remote add upstream https://github.com/the3ash/astro-chiri.git', {
-    stdio: 'inherit'
-  })
-}
-
-// Update theme from upstream repository
-try {
-  execSync('git fetch upstream', { stdio: 'inherit' })
-
-  const currentCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
-  execSync('git merge upstream/main --allow-unrelated-histories', { stdio: 'inherit' })
-  const newCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
-
-  if (currentCommit === newCommit) {
-    console.log('🤗 No updates available, already up to date')
+  if (git('status', '--porcelain'))
+    throw new Error('Commit or stash local changes before updating.')
+  if (git('remote').split('\n').includes(remote)) {
+    if (git('remote', 'get-url', remote).replace(/\.git$/, '') !== url.replace(/\.git$/, '')) {
+      throw new Error('The theme remote points elsewhere. Review it before updating.')
+    }
   } else {
-    console.log('✅ Theme updated')
+    git('remote', 'add', remote, url)
   }
+  execFileSync('git', ['fetch', remote, 'main'], { stdio: 'inherit' })
+  execFileSync('git', ['merge', '--no-commit', '--no-ff', `${remote}/main`], { stdio: 'inherit' })
+  console.log(
+    'Review the changes, run lint/check/build, then commit. Use git merge --abort to cancel a pending merge.'
+  )
 } catch (error) {
-  // Check if there's a merge conflict
-  const gitDirectory = execSync('git rev-parse --git-dir', { encoding: 'utf8' }).trim()
-  const mergeHeadFile = path.join(gitDirectory, 'MERGE_HEAD')
-
-  if (fs.existsSync(mergeHeadFile)) {
-    console.log('⚠️ Update fetched with merge conflicts. Please resolve manually')
-  } else {
-    console.error('❌ Update failed:', error)
-    process.exit(1)
-  }
+  console.error(error instanceof Error ? error.message : error)
+  process.exitCode = 1
 }

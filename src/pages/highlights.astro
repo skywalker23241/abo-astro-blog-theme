@@ -1,0 +1,589 @@
+---
+import { themeConfig } from '@/config'
+import SiteToast from '@/components/ui/SiteToast.astro'
+import InlineHint from '@/components/ui/InlineHint.astro'
+import HighlightsLayout from '@/layouts/HighlightsLayout.astro'
+import MinimalPageHeader from '@/components/ui/MinimalPageHeader.astro'
+import VideoCard from '@/components/ui/VideoCard.astro'
+import HighlightComments from '@/components/highlights/HighlightComments.astro'
+import Heart from 'phosphor-astro/Heart.astro'
+import ChatCircle from 'phosphor-astro/ChatCircle.astro'
+import { gameHighlights, gameProfiles, type GameId } from '@/data/game-highlights'
+import { R2_FREE_STORAGE_BYTES } from '@/lib/game-video'
+import ArrowLeft from 'phosphor-astro/ArrowLeft.astro'
+import ArrowRight from 'phosphor-astro/ArrowRight.astro'
+import ArrowsClockwise from 'phosphor-astro/ArrowsClockwise.astro'
+import MagnifyingGlass from 'phosphor-astro/MagnifyingGlass.astro'
+import Plus from 'phosphor-astro/Plus.astro'
+import Shield from 'phosphor-astro/Shield.astro'
+import SignOut from 'phosphor-astro/SignOut.astro'
+import X from 'phosphor-astro/X.astro'
+import CaretDown from 'phosphor-astro/CaretDown.astro'
+import Check from 'phosphor-astro/Check.astro'
+import PlayFill from 'phosphor-astro/PlayFill.astro'
+import PencilSimple from 'phosphor-astro/PencilSimple.astro'
+import Trash from 'phosphor-astro/Trash.astro'
+
+const pageTitle = '游戏精彩时刻'
+const pageDescription = '收集无畏契约、三角洲行动、英雄联盟和 CS2 里的游戏精彩时刻。'
+
+const gameOptions: Array<{
+  id: 'all' | GameId
+  label: string
+  shortLabel: string
+  playerId?: string
+}> = [
+  { id: 'all', label: '全部游戏', shortLabel: 'ALL' },
+  ...gameProfiles.map(({ id, label, shortLabel, playerId }) => ({
+    id,
+    label,
+    shortLabel,
+    playerId
+  }))
+]
+
+const gameFilterLabels: Record<GameId, string> = {
+  valorant: '无畏时刻',
+  'delta-force': '洲洲时刻',
+  'league-of-legends': '英雄时刻',
+  cs2: '完美时刻'
+}
+
+const gameLogos: Record<GameId, string> = {
+  valorant: '/game-logos/valorant.png',
+  'delta-force': '/game-logos/delta-force.png',
+  'league-of-legends': '/game-logos/league-of-legends.png',
+  cs2: '/game-logos/cs2.png'
+}
+
+const highlights = gameHighlights.filter((highlight) => highlight.url.trim())
+const totalHighlights = highlights.length
+const initialSelfHostedHighlights = highlights.filter((highlight) => highlight.source === 'r2')
+const initialUsedBytes = initialSelfHostedHighlights.reduce(
+  (total, highlight) => total + (highlight.sizeBytes || 0),
+  0
+)
+const initialUnknownSizes = initialSelfHostedHighlights.filter(
+  (highlight) => highlight.sizeBytes === undefined
+).length
+const initialStoragePercentage = Math.min(100, (initialUsedBytes / R2_FREE_STORAGE_BYTES) * 100)
+const initialHighlightsJson = JSON.stringify(highlights).replace(/</g, '\\u003c')
+
+function formatBytes(bytes: number) {
+  if (bytes <= 0) return '0 MB'
+  if (bytes >= 1_000_000_000) return `${(bytes / 1_000_000_000).toFixed(2)} GB`
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`
+  return `${Math.max(1, Math.round(bytes / 1_000))} KB`
+}
+---
+
+<HighlightsLayout
+  title={pageTitle}
+  description={pageDescription}
+  seoTitle={`高光 · ${themeConfig.site.title}`}
+>
+  <div
+    class="replay-app minimal-page"
+    data-highlights-page
+    data-admin-mode="visitor"
+    aria-busy="true"
+  >
+    <div class="highlights-page-heading">
+      <MinimalPageHeader meta="PLAY / REPLAY" title="高光" suffix="游戏">
+        <nav slot="actions" class="replay-header-nav" aria-label="高光管理">
+          <button class="replay-admin-trigger" type="button" data-admin-trigger>
+            <Shield width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+            <span data-admin-trigger-label>管理</span>
+          </button>
+        </nav>
+      </MinimalPageHeader>
+
+      <div class="replay-admin-bar" data-admin-only hidden aria-label="管理员操作">
+        <span class="admin-session-state"><i aria-hidden="true"></i>管理模式</span>
+        <button type="button" data-admin-sync aria-label="同步录像索引">
+          <ArrowsClockwise width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+          <span>同步</span>
+        </button>
+        <button
+          id="add-highlight-toggle"
+          type="button"
+          aria-controls="highlight-editor"
+          aria-label="添加外部来源录像"
+        >
+          <Plus width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+          <span data-highlight-toggle-label>外部来源</span>
+        </button>
+        <button type="button" data-admin-logout aria-label="退出管理员模式">
+          <SignOut width="0.9375rem" height="0.9375rem" aria-hidden="true" />
+          <span>退出</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="replay-main">
+      <section class="capture-library" aria-labelledby="highlight-list-heading">
+        <h2 id="highlight-list-heading" class="sr-only">高光收藏</h2>
+
+        <div class="capture-controls">
+          <label class="capture-search" for="capture-search-input">
+            <span>搜索高光</span>
+            <span class="capture-search-field">
+              <MagnifyingGlass width="1.125rem" height="1.125rem" aria-hidden="true" />
+              <input
+                id="capture-search-input"
+                type="search"
+                placeholder="搜索标题、游戏、标签或备注"
+                autocomplete="off"
+                data-capture-search
+              />
+            </span>
+          </label>
+        </div>
+
+        <div class="library-status is-loading" data-library-status role="status" aria-live="polite">
+          <ArrowsClockwise
+            class="library-status-signal"
+            width="1rem"
+            height="1rem"
+            aria-hidden="true"
+          />
+          <span class="library-status-copy">
+            <strong data-library-status-title>正在载入高光</strong>
+            <small data-library-status-message>正在读取录像索引。</small>
+          </span>
+          <span class="library-status-code" data-library-status-code>SYNC / 01</span>
+          <button type="button" data-library-retry hidden>重试</button>
+        </div>
+
+        <HighlightComments />
+        <p class="interaction-status" data-interaction-status role="status" aria-live="polite"></p>
+        <button class="tag-filter" type="button" data-interaction-retry hidden
+          >重新加载点赞和评论数</button
+        >
+        <div class="capture-folders" data-capture-folders aria-label="录像分类">
+          {
+            gameProfiles.map((game) => (
+              <button
+                class="capture-folder"
+                type="button"
+                data-capture-folder={game.id}
+                aria-controls="capture-folder-content"
+              >
+                <img
+                  class="capture-folder-logo"
+                  src={gameLogos[game.id]}
+                  width="48"
+                  height="48"
+                  alt=""
+                  decoding="async"
+                />
+                <span class="capture-folder-name">{game.label}</span>
+                <span class="capture-folder-count" data-folder-count={game.id}>
+                  载入中
+                </span>
+              </button>
+            ))
+          }
+        </div>
+        <div class="capture-folder-heading" data-folder-heading hidden>
+          <button class="capture-folder-back" type="button" data-folder-back>
+            <ArrowLeft width="1.0625rem" height="1.0625rem" aria-hidden="true" /><span
+              >全部分类</span
+            >
+          </button>
+        </div>
+        <div id="capture-folder-content" class="highlight-list" data-highlight-list hidden>
+          {
+            highlights.map((highlight, index) => (
+              <div class="highlight-item" data-highlight-item data-game={highlight.game}>
+                <VideoCard
+                  url={highlight.url}
+                  source={highlight.source}
+                  title={highlight.title}
+                  description={highlight.description}
+                  game={
+                    gameProfiles.find((game) => game.id === highlight.game)?.label || highlight.game
+                  }
+                  date={highlight.date}
+                  tags={highlight.tags}
+                  sizeBytes={highlight.sizeBytes}
+                  contentType={highlight.contentType}
+                  captureNumber={totalHighlights - index}
+                  highlightId={highlight.id}
+                />
+              </div>
+            ))
+          }
+        </div>
+
+        <div class="empty-state" data-all-empty hidden>
+          <strong>等待下一次精彩操作。</strong>
+          <p>新的录像同步后会自动出现在这里。</p>
+        </div>
+        <div class="empty-state" data-filter-empty hidden>
+          <strong>没有符合条件的录像。</strong>
+          <button type="button" data-clear-filters>清除筛选</button>
+        </div>
+
+        <div class="library-pagination">
+          <button class="load-more-button" type="button" data-load-more hidden>
+            加载更多
+            <span data-load-more-count></span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="replay-modal admin-gate" data-admin-gate hidden>
+      <button
+        class="replay-modal-backdrop"
+        type="button"
+        data-close-admin-gate
+        aria-label="关闭管理员登录"></button>
+      <section
+        class="admin-gate-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-gate-title"
+      >
+        <header>
+          <div>
+            <span>ADMIN ACCESS</span>
+            <h2 id="admin-gate-title">管理员验证</h2>
+          </div>
+          <button type="button" data-close-admin-gate aria-label="关闭管理员登录">
+            <X width="1.125rem" height="1.125rem" aria-hidden="true" />
+          </button>
+        </header>
+        <form data-admin-login-form>
+          <label for="admin-passcode">ADMIN PASSCODE / 管理口令</label>
+          <input id="admin-passcode" type="password" autocomplete="current-password" required />
+          <p data-admin-login-status role="status" aria-live="polite"></p>
+          <button type="submit">ENTER ADMIN MODE</button>
+        </form>
+      </section>
+    </div>
+
+    <div id="highlight-editor" class="highlight-editor" data-highlight-editor hidden>
+      <button
+        class="highlight-editor-backdrop"
+        type="button"
+        data-close-highlight-editor
+        aria-label="关闭录入面板"></button>
+      <section
+        id="add-form"
+        class="highlight-editor-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-heading"
+      >
+        <header class="highlight-editor-head">
+          <div>
+            <span data-editor-mode-label>外部来源</span>
+            <h2 id="add-heading" data-editor-mode-title>添加外部录像</h2>
+          </div>
+          <button
+            class="editor-close"
+            type="button"
+            data-close-highlight-editor
+            aria-label="关闭录入面板"
+          >
+            <X width="1.125rem" height="1.125rem" aria-hidden="true" />
+          </button>
+        </header>
+
+        <form id="highlight-form" class="highlight-form">
+          <input id="highlight-id" name="id" type="hidden" />
+          <input id="highlight-passcode" name="passcode" type="hidden" />
+
+          <div class="form-field game-select-field">
+            <label id="highlight-game-label" for="highlight-game-trigger">游戏分类</label>
+            <div class="game-select" data-game-select>
+              <select id="highlight-game" name="game" class="game-select-native" required hidden>
+                {
+                  gameProfiles.map((profile, index) => (
+                    <option
+                      value={profile.id}
+                      data-player-id={profile.playerId}
+                      data-short-label={profile.shortLabel}
+                      selected={index === 0}
+                    >
+                      {profile.label}
+                    </option>
+                  ))
+                }
+              </select>
+              <button
+                id="highlight-game-trigger"
+                class="game-select-trigger"
+                type="button"
+                data-game-select-trigger
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="highlight-game-options"
+                aria-labelledby="highlight-game-label highlight-game-current"
+              >
+                <span class="game-select-code" data-game-select-code
+                  >{gameProfiles[0].shortLabel}</span
+                >
+                <span id="highlight-game-current" class="game-select-current">
+                  <strong data-game-select-label>{gameProfiles[0].label}</strong>
+                  <small data-game-select-player-id>{gameProfiles[0].playerId}</small>
+                </span>
+                <CaretDown
+                  class="game-select-chevron"
+                  width="1rem"
+                  height="1rem"
+                  aria-hidden="true"
+                />
+              </button>
+              <div
+                id="highlight-game-options"
+                class="game-select-options"
+                data-game-select-options
+                role="listbox"
+                aria-labelledby="highlight-game-label"
+                hidden
+              >
+                {
+                  gameProfiles.map((profile, index) => (
+                    <button
+                      id={`highlight-game-option-${profile.id}`}
+                      class:list={['game-select-option', { 'is-selected': index === 0 }]}
+                      type="button"
+                      role="option"
+                      aria-selected={index === 0}
+                      data-game-select-option
+                      data-game-value={profile.id}
+                    >
+                      <span class="game-select-code" aria-hidden="true">
+                        {profile.shortLabel}
+                      </span>
+                      <span class="game-select-option-copy">
+                        <strong>{profile.label}</strong>
+                        <small>{profile.playerId}</small>
+                      </span>
+                      <span class="game-select-check" aria-hidden="true">
+                        <Check width="1rem" height="1rem" aria-hidden="true" />
+                      </span>
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field" data-url-field>
+            <label for="highlight-url">外链视频地址</label>
+            <input
+              id="highlight-url"
+              name="url"
+              type="url"
+              placeholder="粘贴哔哩哔哩、YouTube 或抖音视频链接"
+              autocomplete="url"
+              required
+            />
+            <span class="source-hint"
+              ><InlineHint>R2 视频由节点自动发现；这里仅用于添加外链录像。</InlineHint></span
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="highlight-title">视频标题</label>
+            <input
+              id="highlight-title"
+              name="title"
+              type="text"
+              maxlength="120"
+              placeholder="例如：亚海悬城 · 蝶刃 · 五杀"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="highlight-description">备注</label>
+            <textarea
+              id="highlight-description"
+              name="description"
+              rows="3"
+              maxlength="4000"
+              placeholder="为这段录像补充说明。"></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="highlight-tags">标签</label>
+            <input
+              id="highlight-tags"
+              name="tags"
+              type="text"
+              placeholder="例如：ACE, 蝶刃, RANKED"
+            />
+          </div>
+
+          <div class="form-actions">
+            <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+            <div class="editor-form-buttons">
+              <button class="editor-cancel" type="button" data-close-highlight-editor>取消</button>
+              <button class="save-button" type="submit" data-editor-submit>保存录像</button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="replay-modal player-modal" data-player-modal hidden>
+      <button class="replay-modal-backdrop" type="button" data-close-player aria-label="关闭播放器"
+      ></button>
+      <section
+        class="player-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="player-modal-title"
+      >
+        <header class="player-modal-head">
+          <div>
+            <span data-player-capture-number>CAPTURE // ----</span>
+            <h2 id="player-modal-title" data-player-title>录像播放</h2>
+          </div>
+          <button type="button" data-close-player aria-label="关闭播放器">
+            <X width="1.25rem" height="1.25rem" aria-hidden="true" />
+          </button>
+        </header>
+        <div class="player-modal-stage" data-player-stage></div>
+        <footer class="player-modal-foot">
+          <div data-player-interactions></div>
+          <div class="player-modal-meta">
+            <strong data-player-game></strong>
+            <span data-player-date></span>
+            <ul data-player-tags></ul>
+          </div>
+          <nav aria-label="切换录像">
+            <button type="button" data-player-previous>
+              <ArrowLeft width="1.0625rem" height="1.0625rem" aria-hidden="true" />PREVIOUS
+            </button>
+            <button type="button" data-player-next>
+              NEXT<ArrowRight width="1.0625rem" height="1.0625rem" aria-hidden="true" />
+            </button>
+          </nav>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <div slot="rail" class="highlights-rail">
+    <nav class="highlights-filters rail-links" aria-label="筛选高光">
+      <fieldset class="game-filter-group">
+        <legend>游戏</legend>
+        <div class="game-filters">
+          {
+            gameOptions.map((game) => (
+              <button
+                class:list={['game-filter', { 'is-active': game.id === 'all' }]}
+                type="button"
+                data-game-filter={game.id}
+                data-game-label={game.label}
+                data-player-id={game.playerId}
+                aria-pressed={game.id === 'all'}
+              >
+                {game.id === 'all' ? game.label : gameFilterLabels[game.id]}
+              </button>
+            ))
+          }
+        </div>
+      </fieldset>
+      <details class="highlight-tag-disclosure">
+        <summary>标签<CaretDown width="0.875rem" height="0.875rem" aria-hidden="true" /></summary>
+        <div class="tag-filters" data-tag-filters>
+          <button
+            class="tag-filter is-active"
+            type="button"
+            data-tag-filter="all"
+            aria-pressed="true"
+          >
+            全部
+          </button>
+        </div>
+      </details>
+    </nav>
+    <section
+      class="system-status rail-links"
+      aria-labelledby="system-status-heading"
+      data-admin-only
+      hidden
+    >
+      <h2 id="system-status-heading">系统状态</h2>
+      <div class="system-status-grid" data-storage-meter>
+        <div class="system-stat storage-stat">
+          <span>录像存储</span>
+          <strong data-storage-used>
+            {
+              initialUnknownSizes > 0
+                ? initialUsedBytes > 0
+                  ? `${formatBytes(initialUsedBytes)} + 未知`
+                  : '大小待读取'
+                : `${formatBytes(initialUsedBytes)} / ${formatBytes(R2_FREE_STORAGE_BYTES)}`
+            }
+          </strong>
+          <div
+            class="storage-meter-track"
+            data-storage-track
+            role="progressbar"
+            aria-label="录像存储占 10 GB 免费额度的比例"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={initialStoragePercentage.toFixed(2)}
+          >
+            <span
+              class="storage-meter-progress"
+              data-storage-progress
+              style={`width: ${initialStoragePercentage}%`}></span>
+          </div>
+          <small data-storage-percent>
+            {
+              initialUnknownSizes > 0
+                ? '--'
+                : `${initialStoragePercentage.toFixed(initialStoragePercentage >= 1 ? 1 : 2)}%`
+            }
+          </small>
+        </div>
+        <div class="system-stat">
+          <span>同步状态</span>
+          <strong data-system-sync>CONNECTING</strong>
+          <small data-storage-remaining>等待节点响应</small>
+        </div>
+        <div class="system-stat">
+          <span>录像数量</span>
+          <strong data-storage-count>{String(totalHighlights).padStart(3, '0')}</strong>
+        </div>
+        <div class="system-stat">
+          <span>存储节点</span>
+          <strong data-system-node>R2 / SYNC</strong>
+        </div>
+      </div>
+      <p class="storage-meter-warning" data-storage-warning data-admin-only hidden></p>
+    </section>
+  </div>
+
+  <script
+    is:inline
+    type="application/json"
+    data-initial-highlights
+    set:html={initialHighlightsJson}
+  />
+  <template data-highlight-icon="play"
+    ><PlayFill width="1.375rem" height="1.375rem" aria-hidden="true" /></template
+  >
+  <template data-highlight-icon="heart"
+    ><Heart width="1.0625rem" height="1.0625rem" aria-hidden="true" /></template
+  >
+  <template data-highlight-icon="comment"
+    ><ChatCircle width="1.0625rem" height="1.0625rem" aria-hidden="true" /></template
+  >
+  <template data-highlight-icon="edit"
+    ><PencilSimple width="0.875rem" height="0.875rem" aria-hidden="true" /></template
+  >
+  <template data-highlight-icon="trash"
+    ><Trash width="0.875rem" height="0.875rem" aria-hidden="true" /></template
+  >
+  <script src="../scripts/game-highlights.js"></script>
+  <SiteToast />
+</HighlightsLayout>

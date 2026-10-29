@@ -24,6 +24,13 @@ export default [
       'astro/no-set-html-directive': 'off'
     }
   },
+  {
+    files: ['scripts/**/*.ts'],
+    rules: {
+      // CLI scripts use stdout for progress and results; keep browser logging restricted.
+      'no-console': ['warn', { allow: ['log', 'warn', 'error'] }]
+    }
+  },
   prettier,
   {
     ignores: [
@@ -33,6 +40,7 @@ export default [
       '*.log',
       '.env*',
       '.cache/**',
+      '.aidesigner/chrome-*/**',
       '.astro/**',
       '.netlify/**',
       '.DS_Store',

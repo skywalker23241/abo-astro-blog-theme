@@ -1,6 +1,10 @@
 ---
 import FormattedDate from '@/components/widgets/FormattedDate.astro'
 import type { PostListProps } from '@/types'
+import { stripCategoryPrefix } from '@/utils/category'
+import { renderPreviewMarkdown } from '@/utils/markdown'
+import X from 'phosphor-astro/X.astro'
+import GradientCover from '@/components/ui/GradientCover.astro'
 
 const { posts } = Astro.props as PostListProps
 
@@ -14,20 +18,61 @@ for (const post of posts) {
 const years = [...groups.keys()].sort((a, b) => b - a)
 ---
 
-<div class="post-list">
+<div class="post-timeline">
   {
     years.map((year) => (
       <section class="year-group">
-        <h2 class="year-label">{year}</h2>
-        <ul>
+        <h2 class="year-label">
+          <span class="year-value">{year}</span>
+          <span class="year-count">{groups.get(year)!.length} 篇</span>
+        </h2>
+        <ul class="post-list">
           {groups.get(year)!.map((post) => (
-            <li>
-              <a href={`/${post.id}/`} class="post-link">
-                <time class="post-date" datetime={post.data.pubDate.toISOString()}>
-                  <FormattedDate date={post.data.pubDate} format="MM-DD" context="list" />
-                </time>
-                <span class="post-title">{post.data.title}</span>
-              </a>
+            <li class="post-item">
+              <article class="post-card glass-card">
+                <a
+                  href={`/${post.id}/`}
+                  class="post-cover"
+                  aria-label={`阅读全文：${stripCategoryPrefix(post.data.title)}`}
+                >
+                  <GradientCover title={stripCategoryPrefix(post.data.title)} slug={post.id} />
+                </a>
+                <div class="post-details">
+                  <span class="post-date">
+                    <FormattedDate date={post.data.pubDate} format="MM-DD" context="list" />
+                  </span>
+                  <h3 class="post-title">
+                    <a href={`/${post.id}/`}>{stripCategoryPrefix(post.data.title)}</a>
+                  </h3>
+                  {post.data.description && <p class="post-summary">{post.data.description}</p>}
+                  <div class="post-actions">
+                    <button
+                      type="button"
+                      class="post-action post-preview-trigger"
+                      aria-label={`预览：${stripCategoryPrefix(post.data.title)}`}
+                      aria-haspopup="dialog"
+                      aria-controls="post-preview"
+                      data-preview-title={stripCategoryPrefix(post.data.title)}
+                      data-preview-date={post.data.pubDate.toISOString().slice(0, 10)}
+                      data-preview-html={renderPreviewMarkdown(
+                        post.body || '',
+                        post.data.description || post.data.title
+                      )}
+                      data-preview-href={`/${post.id}/`}
+                      hidden
+                    >
+                      预览
+                    </button>
+                    <a
+                      class="post-action post-read"
+                      href={`/${post.id}/`}
+                      aria-label={`阅读全文：${stripCategoryPrefix(post.data.title)}`}
+                    >
+                      <span>阅读全文</span>
+                    </a>
+                  </div>
+                </div>
+              </article>
             </li>
           ))}
         </ul>
@@ -36,106 +81,395 @@ const years = [...groups.keys()].sort((a, b) => b - a)
   }
 </div>
 
+<dialog id="post-preview" class="post-preview" aria-labelledby="post-preview-title">
+  <header class="preview-header">
+    <p class="preview-label">文章预览 · <time data-preview-date></time></p>
+    <form method="dialog">
+      <button class="preview-close" type="submit" aria-label="关闭预览" autofocus>
+        <X width="1.125rem" height="1.125rem" aria-hidden="true" />
+      </button>
+    </form>
+  </header>
+  <h2 id="post-preview-title"></h2>
+  <div
+    class="preview-excerpt"
+    data-preview-excerpt
+    tabindex="0"
+    role="region"
+    aria-label="文章预览内容"
+  >
+  </div>
+  <a class="post-action post-read" data-preview-read><span>阅读全文</span></a>
+</dialog>
+
+<script>
+  import { setupPostPreview } from '@/scripts/post-preview'
+  document.addEventListener('astro:page-load', setupPostPreview)
+</script>
+
 <style>
+  .post-timeline,
   .post-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2.25rem;
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .year-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+  .post-timeline {
+    gap: 2.5rem;
   }
 
   .year-label {
-    font-size: 0.875rem;
-    font-weight: var(--font-weight-regular);
-    color: var(--text-tertiary);
-    margin: 0;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 500;
   }
 
-  ul {
-    padding: 0;
+  .year-value,
+  .post-date {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--index-accent) 28%, var(--glass-border-muted));
+    border-radius: 999px;
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--index-accent) 10%, var(--glass-sheen-soft)),
+        transparent 75%
+      ),
+      var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .year-value {
+    min-height: 32px;
+    padding: 0.2rem 0.75rem;
+    color: color-mix(in srgb, var(--text-primary) 65%, var(--index-accent));
+    letter-spacing: 0.06em;
+  }
+
+  .year-count {
+    color: var(--text-tertiary);
+    font-family: var(--sans);
+    font-size: 0.65rem;
+    font-weight: 400;
+  }
+
+  .post-item {
+    min-width: 0;
     margin: 0;
-    list-style-type: none;
+  }
+
+  .post-card {
+    --card-padding: 1.25rem;
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .post-cover {
+    display: block;
+    min-width: 0;
+    border-radius: 12px;
+    text-decoration: none;
+  }
+  .post-details {
+    min-width: 0;
+  }
+
+  .post-date {
+    min-height: 23px;
+    padding: 0.1rem 0.45rem;
+    border-color: color-mix(in srgb, var(--index-accent) 16%, var(--glass-border-muted));
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  .post-date :global(time) {
+    min-width: 0;
+    text-align: inherit;
+  }
+
+  .post-title {
+    margin: 0.4rem 0;
+    font-size: 1rem;
+    font-weight: 550;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .post-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .post-title a:hover {
+    color: color-mix(in srgb, var(--text-primary) 70%, var(--index-accent));
+  }
+
+  .post-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.8;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .post-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  .post-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    box-sizing: border-box;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 999px;
+    background: var(--glass-surface-muted);
+    box-shadow: var(--glass-control-highlight);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .post-action[hidden] {
+    display: none;
+  }
+  .post-read {
+    border-color: color-mix(in srgb, var(--index-accent) 35%, var(--glass-border));
+  }
+  .post-read span {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  .post-action:hover {
+    background-color: var(--glass-surface-strong);
+    border-color: var(--index-accent);
+    color: var(--text-primary);
+  }
+  .post-action:focus-visible,
+  .post-cover:focus-visible,
+  .preview-close:focus-visible {
+    outline: 2px solid var(--index-accent);
+    outline-offset: 3px;
+  }
+
+  .post-preview {
+    box-sizing: border-box;
+    width: min(38rem, calc(100% - 2rem));
+    max-height: 85vh;
+    max-height: 85dvh;
+    padding: 1.5rem;
+    overflow: clip;
+    border: 1px solid var(--glass-border);
+    border-radius: 1.25rem;
+    background: var(--glass-surface-strong);
+    box-shadow: var(--glass-highlight), var(--glass-shadow);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: var(--text-primary);
+  }
+
+  .post-preview[open] {
     display: flex;
     flex-direction: column;
   }
 
-  li {
+  .post-preview > .post-read,
+  .preview-header,
+  #post-preview-title {
+    flex-shrink: 0;
+  }
+
+  .post-preview > .post-read {
+    align-self: flex-start;
+  }
+
+  .post-preview::backdrop {
+    background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  }
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .preview-header form {
     margin: 0;
   }
+  .preview-label {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+  }
+  .preview-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--glass-border-muted);
+    border-radius: 50%;
+    background: var(--glass-surface-muted);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  #post-preview-title {
+    margin: 1rem 0;
+    font-size: 1.35rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .preview-excerpt {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
 
-  .post-link {
-    display: flex;
-    align-items: baseline;
-    gap: 1.25rem;
-    padding: 0.3rem 0.45rem;
-    border-radius: 6px;
+  .preview-excerpt::-webkit-scrollbar {
+    display: none;
+  }
+
+  .preview-excerpt :global(p) {
+    margin: 0 0 1em;
+  }
+
+  .preview-excerpt :global(:last-child) {
+    margin-bottom: 0;
+  }
+
+  .preview-excerpt :global(:is(h1, h2, h3, h4, h5, h6)) {
+    margin: 1.4em 0 0.6em;
     color: var(--text-primary);
-    text-decoration: none;
-    transition:
-      color 0.15s ease-out,
-      background-color 0.15s ease-out,
-      transform 0.15s ease-out;
-    line-height: 1.4;
-  }
-
-  .post-link:hover {
-    background-color: color-mix(in srgb, var(--selection) 82%, transparent);
-    transform: translateX(0.15rem);
-  }
-
-  .post-link:hover .post-title {
-    color: var(--text-primary);
-  }
-
-  .post-link:hover .post-date {
-    opacity: 1;
-  }
-
-  .post-date {
-    flex-shrink: 0;
-    color: var(--text-tertiary);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
-    min-width: 2.75rem;
-    font-family: var(--mono);
-    opacity: 0.85;
-    transition: opacity 0.15s ease-out;
-  }
-
-  .post-title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     font-size: 1.05rem;
-    font-weight: 500;
-    transition: transform 0.15s ease-out;
+    font-weight: 600;
+    line-height: 1.6;
   }
 
-  .post-link:hover .post-title {
-    transform: translateX(0.08rem);
+  .preview-excerpt :global(:first-child) {
+    margin-top: 0;
+  }
+  .preview-excerpt :global(strong) {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .preview-excerpt :global(:is(ul, ol)) {
+    margin: 0 0 1em;
+    padding-left: 1.5em;
+  }
+  .preview-excerpt :global(li) {
+    margin-block: 0.35em;
+  }
+  .preview-excerpt :global(blockquote) {
+    margin: 1em 0;
+    padding-left: 1em;
+    border-left: 2px solid var(--index-accent);
+  }
+  .preview-excerpt :global(code) {
+    padding: 0.15em 0.35em;
+    border-radius: 0.25rem;
+    background: var(--code-bg);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    font-size: 0.85em;
+  }
+  .preview-excerpt :global(pre) {
+    margin: 0 0 1em;
+    padding: 0.85rem;
+    border-radius: 0.65rem;
+    background: var(--code-bg);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .preview-excerpt :global(pre code) {
+    padding: 0;
+    background: none;
+  }
+  .preview-excerpt :global(a) {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-decoration-color: var(--index-accent);
+    text-underline-offset: 0.2em;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  .preview-excerpt :global(table) {
+    width: 100%;
+    margin-bottom: 1em;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 0.85em;
+  }
+  .preview-excerpt :global(:is(th, td)) {
+    padding: 0.5em;
+    border: 1px solid var(--border);
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 520px) {
-    .post-link {
+    .post-card {
+      --card-padding: 1rem;
+      grid-template-columns: 6rem minmax(0, 1fr);
       gap: 0.85rem;
-      padding-right: 0.35rem;
-      padding-left: 0.35rem;
     }
+    .post-title {
+      font-size: 0.92rem;
+    }
+    .post-summary {
+      -webkit-line-clamp: 2;
+      font-size: 0.74rem;
+    }
+    .post-actions {
+      margin-top: 0.65rem;
+      gap: 0.4rem;
+    }
+    .post-action {
+      padding-inline: 0.6rem;
+    }
+  }
 
-    .post-date {
-      min-width: 3rem;
-      font-size: 0.76rem;
+  @media (prefers-reduced-motion: reduce) {
+    .post-action {
+      transition: none;
     }
   }
 </style>

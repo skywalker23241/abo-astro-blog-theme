@@ -1,0 +1,88 @@
+/* Existing navigation, image viewer and mobile rail own their animations. */
+:is(.post-preview, #bookmark-web-search, .overlay, .replay-modal, .highlight-editor) {
+  --surface-duration: 180ms;
+  --surface-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:is(.post-preview, #bookmark-web-search, .overlay)[open],
+:is(.replay-modal, .highlight-editor):not([hidden]) {
+  animation: surface-in var(--surface-duration) var(--surface-ease) both;
+}
+
+:is(.post-preview, #bookmark-web-search)[open],
+.overlay[open] > .overlay-card {
+  animation-name: surface-pop-in;
+  animation-duration: var(--surface-duration);
+  animation-timing-function: var(--surface-ease);
+  animation-fill-mode: both;
+}
+
+:is(
+  .post-preview,
+  #bookmark-web-search,
+  .overlay,
+  .replay-modal,
+  .highlight-editor
+).is-motion-closing {
+  animation: surface-out 160ms ease-in both;
+}
+
+.overlay.is-motion-closing > .overlay-card,
+.is-motion-closing > :is(.player-modal-card, .admin-gate-card, .highlight-editor-card) {
+  animation: surface-pop-out 160ms ease-in both;
+}
+
+:is(.post-preview, #bookmark-web-search)[open]::backdrop {
+  animation: surface-in 180ms ease-out both;
+}
+
+:is(.post-preview, #bookmark-web-search).is-motion-closing::backdrop {
+  animation: surface-out 160ms ease-in both;
+}
+
+@keyframes surface-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes surface-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes surface-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes surface-pop-out {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.post-preview, #bookmark-web-search, .overlay, .replay-modal, .highlight-editor),
+  .overlay > .overlay-card,
+  .is-motion-closing > :is(.player-modal-card, .admin-gate-card, .highlight-editor-card),
+  :is(.post-preview, #bookmark-web-search)::backdrop {
+    animation: none !important;
+  }
+}

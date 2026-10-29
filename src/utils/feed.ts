@@ -107,7 +107,8 @@ async function generateFeedInstance(context: APIContext) {
     description: description,
     id: siteUrl,
     link: siteUrl,
-    language: language,
+    // Feed <language> expects a BCP-47 tag (zh-CN), config stores zh_CN
+    language: language.replace('_', '-'),
     copyright: `Copyright © ${new Date().getFullYear()} ${author}`,
     updated: new Date(),
     generator: 'Astro Chiri Feed Generator',

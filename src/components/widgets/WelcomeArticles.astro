@@ -1,0 +1,27 @@
+---
+import ArrowRight from 'phosphor-astro/ArrowRight.astro'
+import { getSortedFilteredPosts } from '@/utils/draft'
+import { stripCategoryPrefix } from '@/utils/category'
+
+const posts = (await getSortedFilteredPosts()).slice(0, 3)
+---
+
+<aside class="welcome-reading" aria-labelledby="welcome-recent-title">
+  <h2 id="welcome-recent-title">最近写的</h2>
+  <a class="welcome-enter" href="/blog/">
+    <span>进入博客</span>
+    <ArrowRight width="1rem" height="1rem" aria-hidden="true" />
+  </a>
+  <ul class="welcome-posts">
+    {
+      posts.map((post) => (
+        <li>
+          <a href={`/${post.id}/`}>
+            <span>{post.data.displayTitle || stripCategoryPrefix(post.data.title)}</span>
+            <ArrowRight width="0.875rem" height="0.875rem" aria-hidden="true" />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</aside>

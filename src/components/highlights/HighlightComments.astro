@@ -1,0 +1,51 @@
+---
+import X from 'phosphor-astro/X.astro'
+import InlineHint from '@/components/ui/InlineHint.astro'
+---
+
+<section
+  class="highlight-comments"
+  data-comments-panel
+  aria-labelledby="highlight-comments-title"
+  hidden
+>
+  <header>
+    <div>
+      <h3 id="highlight-comments-title" tabindex="-1">评论</h3>
+      <p data-comments-capture></p>
+    </div>
+    <button type="button" data-close-comments aria-label="关闭评论区"
+      ><X width="1.125rem" height="1.125rem" aria-hidden="true" /></button
+    >
+  </header>
+  <p class="interaction-status" data-comments-status role="status" aria-live="polite"></p>
+  <button type="button" data-comments-retry hidden>重新加载评论</button>
+  <ol class="highlight-comment-list" data-comments-list></ol>
+  <button type="button" data-comments-more hidden>查看更多评论</button>
+  <form data-comment-form>
+    <label for="comment-nickname">昵称</label>
+    <input
+      id="comment-nickname"
+      name="nickname"
+      maxlength="24"
+      required
+      autocomplete="nickname"
+      placeholder="怎么称呼你？"
+    />
+    <label for="comment-content">评论</label>
+    <textarea
+      id="comment-content"
+      name="content"
+      maxlength="1000"
+      rows="3"
+      required
+      placeholder="聊聊这个精彩瞬间……"></textarea>
+    <div class="comment-honeypot" aria-hidden="true" inert>
+      <label for="comment-website">网站</label>
+      <input id="comment-website" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+    <p><InlineHint>无需登录。昵称与评论将公开显示，请勿填写隐私信息。</InlineHint></p>
+    <button type="submit">发表评论</button>
+    <span class="interaction-status" data-comment-status role="status" aria-live="polite"></span>
+  </form>
+</section>

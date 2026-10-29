@@ -10,6 +10,8 @@ import { themeConfig } from '../config.ts'
  */
 export default function rehypeImageProcessor() {
   return (tree) => {
+    let hasAssignedLcpImage = false
+
     visit(tree, 'element', (node, index, parent) => {
       if (node.tagName !== 'p') {
         return
@@ -35,26 +37,25 @@ export default function rehypeImageProcessor() {
 
       const newNodes = []
 
-      for (const [position, imgNode] of imgNodes.entries()) {
+      for (const imgNode of imgNodes) {
         const alt = imgNode.properties?.alt?.trim()
-        const isLeadingImage = position === 0
+        const isLcpImage = !hasAssignedLcpImage
         const existingClassesRaw = imgNode.properties?.className || imgNode.properties?.class || []
         const existingClasses = Array.isArray(existingClassesRaw)
           ? existingClassesRaw
           : [existingClassesRaw]
 
-        // Enhanced image properties with performance optimizations
+        // Only the first content image can be the LCP candidate. Giving every
+        // image high priority makes below-the-fold images compete for bandwidth.
         imgNode.properties = {
           ...imgNode.properties,
-          'data-preview': themeConfig.post.imageViewer ? 'true' : 'false',
-          // Let the first content image load eagerly to improve LCP.
-          loading: isLeadingImage ? 'eager' : 'lazy',
-          // Add decoding hint for better performance
+          'data-preview': themeConfig.post.imageViewer.enabled ? 'true' : 'false',
+          loading: isLcpImage ? 'eager' : 'lazy',
           decoding: 'async',
-          // First content image gets high fetch priority.
-          fetchpriority: isLeadingImage ? 'high' : 'auto',
+          fetchpriority: isLcpImage ? 'high' : 'auto',
           className: [...existingClasses, 'img-placeholder']
         }
+        hasAssignedLcpImage = true
 
         if (!alt || alt.includes('_')) {
           newNodes.push(imgNode)

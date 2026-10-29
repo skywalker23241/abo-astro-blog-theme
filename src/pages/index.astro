@@ -1,12 +1,279 @@
 ---
-import IndexLayout from '@/layouts/IndexLayout.astro'
-import PostList from '@/components/widgets/PostList.astro'
 import { themeConfig } from '@/config'
-import { getSortedFilteredPosts } from '@/utils/draft'
+import '@/styles/global.css'
+import { getEntry, render } from 'astro:content'
+import Header from '@/components/layout/Header.astro'
+import BaseHead from '@/components/layout/BaseHead.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 
-const posts = await getSortedFilteredPosts()
+const about = await getEntry('about', 'about')
+
+if (!about) {
+  throw new Error('Missing about content entry')
+}
+
+const { Content } = await render(about)
+const description = themeConfig.site.description
 ---
 
-<IndexLayout title={themeConfig.site.title} description={themeConfig.site.description}>
-  <PostList posts={posts} />
-</IndexLayout>
+<BaseLayout title={`欢迎 · ${themeConfig.site.title}`} description={description} type="page">
+  <BaseHead title={`欢迎 · ${themeConfig.site.title}`} description={description} slot="head" />
+
+  <div class="welcome-header">
+    <Header showPageRail={false} />
+  </div>
+
+  <main class="welcome-page">
+    <Content />
+  </main>
+</BaseLayout>
+
+<style>
+  .welcome-header {
+    height: calc(1.5rem + env(safe-area-inset-top));
+    margin-bottom: 0.5rem;
+  }
+
+  .welcome-header :global(.site-header.is-narrow-page .site-nav) {
+    max-width: 64rem;
+  }
+
+  .welcome-page {
+    --welcome-accent: #789b83;
+    --welcome-paper: color-mix(in srgb, #fffdf8 84%, transparent);
+    position: relative;
+    display: grid;
+    min-height: calc(100vh - 8rem);
+    min-height: calc(100svh - 8rem);
+    place-items: center;
+    padding: 2rem 0 3rem;
+    isolation: isolate;
+  }
+
+  :global(html.dark) .welcome-page {
+    --welcome-accent: #d2be98;
+    --welcome-paper: color-mix(in srgb, #242724 72%, transparent);
+  }
+
+  :global(.welcome-stage) {
+    display: grid;
+    width: min(100%, 64rem);
+    grid-template-columns: minmax(0, 1fr);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.65rem;
+    background:
+      linear-gradient(145deg, var(--glass-sheen-soft), transparent 38%), var(--welcome-paper);
+    box-shadow:
+      var(--glass-highlight),
+      0 1.6rem 4rem color-mix(in srgb, var(--text-primary) 9%, transparent);
+    backdrop-filter: blur(20px) saturate(105%);
+    -webkit-backdrop-filter: blur(20px) saturate(105%);
+  }
+
+  :global(.welcome-story) {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  :global(.welcome-artwork) {
+    display: grid;
+    min-width: 0;
+    place-items: center;
+    margin: 0;
+
+    min-height: 15rem;
+    align-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+
+  :global(.welcome-artwork span:first-child) {
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    letter-spacing: 0.08em;
+  }
+
+  :global(.welcome-title-block) {
+    min-width: 0;
+    container-type: inline-size;
+    padding: 1.25rem clamp(2rem, 5vw, 3.25rem) 2.6rem;
+  }
+
+  :global(.welcome-translation) {
+    margin: 0.9rem 0 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    line-height: 1.6;
+  }
+
+  :global(.welcome-title-block h1) {
+    margin: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(1.35rem, 2.5vw, 2.65rem);
+    font-size: clamp(1rem, 11cqi, 3rem);
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  :global(.welcome-title-block h1 a) {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  :global(.welcome-title-block h1 a:hover) {
+    text-decoration: underline;
+    text-decoration-color: var(--welcome-accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+  }
+
+  :global(.welcome-title-block cite) {
+    display: block;
+    margin-top: 1.15rem;
+    color: var(--text-tertiary);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 0.82rem;
+    font-style: normal;
+  }
+
+  :global(.welcome-reading) {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.8rem 1rem;
+    padding: 1.15rem clamp(2rem, 5vw, 3.25rem) 1.5rem;
+    border-top: 1px solid var(--glass-border-muted);
+    color: var(--text-secondary);
+  }
+
+  :global(.welcome-reading h2) {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  :global(.welcome-posts) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.3rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.welcome-posts li) {
+    min-width: 0;
+  }
+
+  :global(.welcome-posts a) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.65rem;
+    border-radius: 0.25rem;
+    padding: 0.4rem 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.65;
+    text-decoration: none;
+  }
+
+  :global(.welcome-posts a span) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  :global(.welcome-posts a svg) {
+    flex-shrink: 0;
+    align-self: center;
+    color: var(--welcome-accent);
+  }
+
+  :global(.welcome-posts a:hover) {
+    color: var(--text-primary);
+  }
+
+  :global(.welcome-enter) {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.8rem;
+    background: var(--text-primary);
+    color: var(--bg);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    transition:
+      transform 0.16s ease-out,
+      box-shadow 0.16s ease-out;
+  }
+
+  :global(.welcome-enter:hover) {
+    transform: translateY(-2px);
+    box-shadow: 0 0.7rem 1.5rem color-mix(in srgb, var(--text-primary) 14%, transparent);
+  }
+
+  :global(.welcome-enter:focus-visible),
+  :global(.welcome-posts a:focus-visible) {
+    outline: 2px solid var(--welcome-accent);
+    outline-offset: 4px;
+  }
+
+  @media (max-width: 760px) {
+    .welcome-page {
+      min-height: auto;
+      padding: 2rem 0 1.5rem;
+    }
+
+    :global(.welcome-stage) {
+      min-height: 0;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :global(.welcome-story) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+    }
+
+    :global(.welcome-posts) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :global(.welcome-artwork) {
+      padding: 1.4rem 0.8rem 0;
+    }
+
+    :global(.welcome-title-block) {
+      padding: 1rem 1.5rem 2rem;
+    }
+
+    :global(.welcome-reading) {
+      padding: 1rem 1.5rem 1.25rem;
+      border-top: 1px dashed var(--divider-color);
+      border-left: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.welcome-enter) {
+      transition: none;
+    }
+
+    :global(.welcome-enter:hover) {
+      transform: none;
+    }
+  }
+</style>
